@@ -1,0 +1,76 @@
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.UUID;
+
+public class Ship {
+    private ShipType type;
+    private boolean isSunk;
+    private int[] coordinates;
+    private UUID id;
+    private Direction direction;
+
+    protected static final Map<ShipType, ShipBox> boxByType = initializeBoxes();
+    private static Map<ShipType, ShipBox> initializeBoxes() {
+        EnumMap<ShipType, ShipBox> boxMap = new EnumMap<>(ShipType.class);
+        
+        boxMap.put(ShipType.BATTLESHIP4X1, new ShipBox(4, 1, 
+            new boolean[][]{{true, true, true, true}}, 
+            new String[]{"■■■■■■■■"}, Direction.RIGHT));
+        
+        boxMap.put(ShipType.CRUISER3X1, new ShipBox(3, 1, 
+            new boolean[][]{{true, true, true}}, 
+            new String[]{"■■■■■■"}, Direction.RIGHT));
+        
+        boxMap.put(ShipType.DESTROYER2X1, new ShipBox(2, 1, 
+            new boolean[][]{{true, true}}, 
+            new String[]{"■■■■"}, Direction.RIGHT));
+        
+        boxMap.put(ShipType.SUBMARINE1X1, new ShipBox(1, 1, 
+            new boolean[][]{{true}}, 
+            new String[]{"■■"}, Direction.RIGHT));
+        
+        boxMap.put(ShipType.U, new ShipBox(3, 2, 
+            new boolean[][]{
+                {true, true, true},
+                {true, false, true}
+            },
+            new String[]{
+                "■■■■■■",
+                "■■  ■■"
+            }, Direction.RIGHT));
+        
+        return boxMap;
+    }
+
+    public Ship(ShipType type, int[] coordinates, Direction direction) {
+        this.type = type;
+        this.coordinates = coordinates;
+        this.isSunk = false;
+        this.id = UUID.randomUUID();
+        this.direction = direction;
+    }
+
+    public ShipBox getBox() {
+        return boxByType.get(type).inDirection(direction);
+    }
+
+    public void displayFromOrigin(int ox, int oy, AsciiDisplay display) {
+        getBox().displayFromAbsoluteTopLeftOn(coordinates[0]*2 + ox, coordinates[1] + oy, display);
+    }
+
+    public int[] getCoordinates() {
+        return coordinates;
+    }
+
+    public ShipType getType() {
+        return type;
+    }
+
+    public boolean isSunk() {
+        return isSunk;
+    }
+
+    public void setSunk(boolean sunk) {
+        isSunk = sunk;
+    }
+}

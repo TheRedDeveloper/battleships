@@ -1,0 +1,32 @@
+Let's just dump my thought process into a file because I probably need to change a bunch of shit.
+First of all I really hate Java I cannot stress this enough and I don't want to mess with their "classy" GUI bullcrap.
+I thought doing it with ASCII would be so much easier but I end up having to do shitty workarounds and not matching my expectations.
+So the thing is first of all the programm isn't running?! I don't know why probably to do with the shitty "package" declarations.
+[X] Get the program fixed
+Then my game makes no total sense. We need to have eighter
+A: multiple players
+B: a bot
+So we should implement those both. How should this be handled? In the start menu we should have an option for either singleplayer or multiplayer.
+We should also have a screen to select the bot difficulty. This should be somehow stored in the game state.
+HOW SHOULD WE HANDLE MULTIPLAYER?
+A: local
+B: network
+I am fucking scared of any networking in Java. I am scared. So we must do local multiplayer but how would you do a game in local multiplayer when there is only one screen? I guess we could just have a split screen. That would not work this is battleship that would give away all the information. MULTIPLAYER IS IMPOSSIBLE. I NEED TO HAVE NETWORKING I DONT WANT TO HAVE NETWORKING! Ok so we determined solution A is impossible. So we need to have networking. I am scared of networking. I don't want to do networking. I don't know how to do networking. I don't want to learn how. I guess I will have to figure it out eventually… Then there are two solutions for networking:
+A: client server model with P2P connections
+ -- Will the network even allow this? I don't know. 
+B: programming a seperate hosted server and client
+ -- Programming a server in Java is fucking hard.
+Is there a java easy way to do P2P connections? no.
+
+Fuck mutiplayer actually then. We will not do multiplayer right now.
+
+Here is a good idea. Let's start by hiding the compilation bullshit
+[X] Get rid of the hiding bullshit
+Good shit.
+
+Ok now that we have a clearer goal we need to think about bots.
+Let's use a strategy pattern to define different bot behaviors. We can create an interface for the bot and implement various strategies for different difficulty levels.
+I hope this works in Java.
+
+[ ] I should write a fucking formatter in python for my weird txt UML diagrams
+
