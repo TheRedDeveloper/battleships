@@ -1,4 +1,8 @@
-/* A locationless NxN box */
+/** A locationless NxN box.
+ * 
+ *  Boxes with position information are called {@link Rect}.
+ * 
+ *  This class is important for ensuring code standards. */
 public class Box {
     public int sx;
     public int sy;
@@ -13,5 +17,14 @@ public class Box {
     public Box(int sx, int sy) {
         this.sx = sx;
         this.sy = sy;
+    }
+
+    public int getArea() {
+        return sx * sy;
+    }
+
+    @Override
+    public String toString() {
+        return "Box[" + sx + "x" + sy + "]";
     }
 }

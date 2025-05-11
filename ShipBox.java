@@ -1,8 +1,11 @@
+import java.util.ArrayList;
+import java.util.List;
+
 /** The box of a shiptype on the grid */
 public class ShipBox extends Box {
     private final boolean[][] atIsShip;
     private final String[] rowsToDisplay;
-    /** Storing the original direction enables us to call .inDirection() multiple times */
+    /** Storing the original direction enables us to call {@link ShipBox#inDirection(Direction)} multiple times */
     private final Direction originalDirection;
 
     public ShipBox(int sx, int sy, boolean[][] atIsShip, String[] rowsToDisplay, Direction originalDirection) {
@@ -11,26 +14,41 @@ public class ShipBox extends Box {
         this.rowsToDisplay = rowsToDisplay;
         this.originalDirection = originalDirection;
     }
-
     public boolean isShipAtRelativeCoordinates(int x, int y) {
         if (x < 0 || x >= sx || y < 0 || y >= sy) {
             return false;
         }
         return atIsShip[y][x];
     }
+
+    /** List of positions occupied by the ShipBox */
+    public List<Position> getOccupiedRelativePositions() {
+        List<Position> positions = new ArrayList<>();
+        for (int y = 0; y < sy; y++) {
+            for (int x = 0; x < sx; x++) {
+                if (atIsShip[y][x]) {
+                    positions.add(new Position(x, y));
+                }
+            }
+        }
+        return positions;
+    }
     
+    /** Display the ship box at the given coordinates on the display */
     public void displayFromAbsoluteTopLeftOn(int x, int y, AsciiDisplay display) {
         for (int i = 0; i < rowsToDisplay.length; i++) {
             display.drawString(x, y + i, rowsToDisplay[i]);
         }
     }
 
+    /** Get the ship box facing in the specified direction */
     public ShipBox inDirection(Direction direction) {
         RotationDirection rotation = RotationDirection.fromToDirection(originalDirection, direction);
-        return new ShipBox(sx, sy, rotateBooleanMatrix(atIsShip, rotation), rotateStringArray(rowsToDisplay, rotation), originalDirection);
+        int newWidth = (rotation == RotationDirection.CLOCKWISE || rotation == RotationDirection.COUNTER_CLOCKWISE) ? sy : sx;
+        int newHeight = (rotation == RotationDirection.CLOCKWISE || rotation == RotationDirection.COUNTER_CLOCKWISE) ? sx : sy;
+        return new ShipBox(newWidth, newHeight, rotateBooleanMatrix(atIsShip, rotation), rotateStringArray(rowsToDisplay, rotation), direction);
     }
     
-    // Generic matrix rotation for boolean arrays
     private boolean[][] rotateBooleanMatrix(boolean[][] matrix, RotationDirection direction) {
         int height = matrix.length;
         int width = matrix[0].length;
@@ -71,7 +89,6 @@ public class ShipBox extends Box {
         };
     }
     
-    // Generic string array rotation
     private String[] rotateStringArray(String[] array, RotationDirection direction) {
         if (array.length == 0) return new String[0];
         int height = array.length;

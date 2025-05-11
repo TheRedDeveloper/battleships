@@ -1,4 +1,4 @@
-/** SINGLETON INTERFACE */
+/** A singleton interface for game modes. */
 public abstract class GameMode {
     protected GameMode() {
         // Protected constructor for singleton pattern

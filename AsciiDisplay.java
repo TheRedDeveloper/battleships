@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.awt.event.*;
+import java.util.logging.Level;
 import javax.swing.*;
 
 /** AI written, I let Claude mess with shitty Java. @author Claude */
@@ -28,7 +29,7 @@ public class AsciiDisplay {
                 frame.addWindowListener(new WindowAdapter() {
                     @Override
                     public void windowClosing(WindowEvent e) {
-                        System.out.println("Window closing...");
+                        Game.LOGGER.log(Level.INFO, "Window closing...");
                         Game.stop();
                         frame.dispose();
                         System.exit(0);
@@ -50,50 +51,26 @@ public class AsciiDisplay {
                 frame.setLocationRelativeTo(null);
                 frame.setResizable(false);
                 
-                System.out.println("AsciiDisplay frame initialized");
+                Game.LOGGER.log(Level.INFO, "AsciiDisplay frame initialized");
             });
         } catch (Exception e) {
-            System.err.println("Error initializing AsciiDisplay: " + e.getMessage());
+            Game.LOGGER.log(Level.SEVERE, "Error initializing AsciiDisplay: " + e.getMessage());
             e.printStackTrace();
         }
     }
     
     public void show() {
-        System.out.println("Showing AsciiDisplay...");
+        Game.LOGGER.log(Level.INFO, "Showing AsciiDisplay...");
         SwingUtilities.invokeLater(() -> {
             if (frame != null) {
                 frame.setVisible(true);
                 textArea.requestFocusInWindow(); // Ensure keyboard focus
-                System.out.println("Frame should now be visible");
+                Game.LOGGER.log(Level.INFO, "Frame should now be visible");
                 refreshDisplay();
             } else {
-                System.err.println("Cannot show display - frame is null");
+                Game.LOGGER.log(Level.SEVERE, "Cannot show display - frame is null");
             }
         });
-    }
-    
-    public KeyEvent pollKeyEvent() {
-        return inputManager.pollKeyEvent();
-    }
-    
-    public boolean hasKeyEvents() {
-        return inputManager.hasKeyEvents();
-    }
-    
-    public int[] getMousePosition() {
-        return inputManager.getMousePosition();
-    }
-    
-    public boolean isMousePressed() {
-        return inputManager.isMousePressed();
-    }
-    
-    public boolean checkAndResetMouseClicked() {
-        return inputManager.checkAndResetMouseClicked();
-    }
-    
-    public boolean checkAndResetRightMouseClicked() {
-        return inputManager.checkAndResetRightMouseClicked();
     }
     
     public final void clearBuffer() {
@@ -120,7 +97,7 @@ public class AsciiDisplay {
     
     public void refreshDisplay() {
         if (textArea == null) {
-            System.err.println("Cannot refresh - textArea is null");
+            Game.LOGGER.log(Level.SEVERE, "Cannot refresh - textArea is null");
             return;
         }
         
@@ -140,4 +117,16 @@ public class AsciiDisplay {
             textArea.requestFocusInWindow();
         });
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        for (int y = 0; y < GRID_HEIGHT; y++) {
+            for (int x = 0; x < GRID_WIDTH; x++) {
+                sb.append(displayBuffer[y][x]);
+            }
+            sb.append('\n');
+        }
+        return sb.toString();
+    } 
 }

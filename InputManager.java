@@ -2,6 +2,7 @@ import java.awt.FontMetrics;
 import java.awt.event.*;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.logging.Level;
 import javax.swing.JTextArea;
 
 /** AI written, so blame Claude if not working. @author Claude */
@@ -80,23 +81,39 @@ public class InputManager {
             }
         });
     }
-    
+
     private void updateMousePosition(MouseEvent e, JTextArea textArea, int gridWidth, int gridHeight) {
         synchronized (mouseLock) {
             // Calculate character dimensions if not set
             if (charWidth == 0 || charHeight == 0) {
                 FontMetrics metrics = textArea.getFontMetrics(textArea.getFont());
-                charWidth = metrics.charWidth('M'); // Use 'M' as a reference for monospace width
+                String testText = "ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz0123456789";
+                charWidth = metrics.stringWidth(testText) / testText.length();
                 charHeight = metrics.getHeight();
+                
+                // Log the character dimensions once they're calculated
+                Game.LOGGER.log(Level.INFO, "Character dimensions: width="+charWidth+", height="+charHeight);
             }
             
+            // Log raw mouse position and calculations
+            float rawX = e.getX();
+            float rawY = e.getY();
+            float calcX = rawX / charWidth;
+            float calcY = rawY / charHeight;
+            
             // Convert pixel coordinates to grid coordinates
-            mouseX = (int)(e.getX() / charWidth);
-            mouseY = (int)(e.getY() / charHeight);
+            mouseX = (int)Math.floor(rawX * charWidth / 84.6); // I DON'T KNOW WHY THIS WORKS
+            // TODO: Find out why this works
+            
+            // Apply similar logic to Y-coordinate
+            mouseY = Math.max(0, (int)Math.floor(rawY / charHeight));
             
             // Ensure coordinates are within bounds
             mouseX = Math.max(0, Math.min(gridWidth - 1, mouseX));
             mouseY = Math.max(0, Math.min(gridHeight - 1, mouseY));
+            
+            // Log detailed conversion information
+            // Game.LOGGER.log(Level.INFO, "Mouse coord conversion: raw=(" + rawX + "," + rawY + ") → calc=(" + calcX + "," + calcY + ") → grid=(" + mouseX + "," + mouseY + ")");
         }
     }
     
@@ -117,10 +134,10 @@ public class InputManager {
     }
     
     /** Gets the current mouse position in grid coordinates 
-     *  @return int[2] with x, y coordinates */
-    public int[] getMousePosition() {
+     *  @return Position with x, y coordinates */
+    public Position getMousePosition() {
         synchronized (mouseLock) {
-            return new int[]{mouseX, mouseY};
+            return new Position(mouseX, mouseY);
         }
     }
     

@@ -1,21 +1,18 @@
+import java.util.List;
+import java.util.logging.Level;
+
+/** The global state of the game, persistent between modes. */
 public class GameState {
     private GameMode mode;
-    private Grid[] grids;
+    public List<Grid> grids;
 
     public GameState(GameMode mode) {
         this.mode = mode;
-        grids = new Grid[2];
-    }
-
-    public Tile getTile(int grid, int x, int y) {
-        return grids[grid].getTile(x, y);
-    }
-
-    public void setTile(int grid, int x, int y, TileData tileData) {
-        grids[grid].setTile(x, y, tileData);
+        this.grids = List.of(new Grid("Player"));
     }
 
     public void setMode(GameMode mode) {
+        Game.LOGGER.log(Level.INFO, "Switching game mode from " + this.mode.getClass().getSimpleName() + " to " + mode.getClass().getSimpleName());
         this.mode.exit();
         this.mode = mode;
         mode.enter();

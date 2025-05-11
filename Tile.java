@@ -1,9 +1,9 @@
 public class Tile {
     private TileData data;
-    private int[] coordinate;
+    private Position position;
 
-    public Tile(TileData data, int[] coordinate) {
+    public Tile(TileData data, Position position) {
         this.data = data;
-        this.coordinate = coordinate;
+        this.position = position;
     }
 }

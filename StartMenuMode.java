@@ -1,5 +1,6 @@
 import java.awt.event.KeyEvent;
 
+/** @author Claude */
 public class StartMenuMode extends GameMode {
     private StartMenuScreen screen = StartMenuScreen.MAIN;
     private int selectedOption = 0;
@@ -56,19 +57,15 @@ public class StartMenuMode extends GameMode {
      */
     private void processKeyEvent(KeyEvent e, GameState gameState) {
         int keyCode = e.getKeyCode();
-        char keyChar = e.getKeyChar();
         
         if (screen == StartMenuScreen.MAIN) {
-            // Handle main menu key presses
             switch (keyCode) {
-                case KeyEvent.VK_UP:
-                case KeyEvent.VK_K:
+                case KeyEvent.VK_UP, KeyEvent.VK_K:
                     // Move selection up
                     selectedOption = Math.max(0, selectedOption - 1);
                     break;
                     
-                case KeyEvent.VK_DOWN:
-                case KeyEvent.VK_J:
+                case KeyEvent.VK_DOWN, KeyEvent.VK_J:
                     // Move selection down
                     selectedOption = Math.min(2, selectedOption + 1);
                     break;
@@ -79,16 +76,20 @@ public class StartMenuMode extends GameMode {
                     break;
                     
                 default:
-                    // Handle numeric shortcuts
-                    if (keyChar == '1') {
-                        selectedOption = 0;
-                        handleSelection(gameState);
-                    } else if (keyChar == '2') {
-                        selectedOption = 1;
-                        handleSelection(gameState);
-                    } else if (keyChar == '3') {
-                        selectedOption = 2;
-                        handleSelection(gameState);
+                    char keyChar = e.getKeyChar();
+                    switch (keyChar) {
+                        case '1':
+                            selectedOption = 0;
+                            handleSelection(gameState);
+                            break;
+                        case '2':
+                            selectedOption = 1;
+                            handleSelection(gameState);
+                            break;
+                        case '3':
+                            selectedOption = 2;
+                            handleSelection(gameState);
+                            break;
                     }
                     break;
             }
