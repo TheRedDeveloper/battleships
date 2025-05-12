@@ -2,7 +2,6 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.logging.Level;
 
 /** Represents a ship in the game.
  * 
@@ -21,19 +20,19 @@ public class Ship {
         
         boxMap.put(ShipType.BATTLESHIP4X1, new ShipBox(4, 1, 
             new boolean[][]{{true, true, true, true}}, 
-            new String[]{"########"}, Direction.RIGHT));
+            new String[]{"########"}, Direction.RIGHT, ANSI.BRIGHT_RED));
         
         boxMap.put(ShipType.CRUISER3X1, new ShipBox(3, 1, 
             new boolean[][]{{true, true, true}}, 
-            new String[]{"######"}, Direction.RIGHT));
+            new String[]{"######"}, Direction.RIGHT, ANSI.YELLOW));
         
         boxMap.put(ShipType.DESTROYER2X1, new ShipBox(2, 1, 
             new boolean[][]{{true, true}}, 
-            new String[]{"####"}, Direction.RIGHT));
+            new String[]{"####"}, Direction.RIGHT, ANSI.BRIGHT_GREEN));
         
         boxMap.put(ShipType.SUBMARINE1X1, new ShipBox(1, 1, 
             new boolean[][]{{true}}, 
-            new String[]{"##"}, Direction.RIGHT));
+            new String[]{"##"}, Direction.RIGHT, ANSI.WHITE));
         
         boxMap.put(ShipType.U, new ShipBox(3, 2, 
             new boolean[][]{
@@ -43,7 +42,7 @@ public class Ship {
             new String[]{
                 "######",
                 "##  ##"
-            }, Direction.RIGHT));
+            }, Direction.RIGHT, ANSI.CYAN));
         
         return boxMap;
     }
@@ -69,9 +68,10 @@ public class Ship {
 
     public Rect asRect() { return new Rect(x, y, getShipBox()); }
 
-    public void displayFromOrigin(int ox, int oy, AsciiDisplay display) {
-        Game.LOGGER.log(Level.INFO, "Displaying ship at (" + x + ", " + y + " with offset (" + ox + ", " + oy + ")");
-        getShipBox().displayFromAbsoluteTopLeftOn(x * 2 + ox, y + oy, display);
+    public void displayFromOrigin(int originX, int originY, AsciiDisplay display) {
+        ShipBox box = Ship.boxByType.get(type);
+        box = box.inDirection(direction);
+        box.displayFromAbsoluteTopLeftOn(originX + x * 2, originY + y, display);
     }
 
     public ShipType getType() {

@@ -1,14 +1,17 @@
+import java.awt.Component;
 import java.awt.FontMetrics;
 import java.awt.event.*;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.logging.Level;
-import javax.swing.JTextArea;
 
-/** AI written, so blame Claude if not working. @author Claude */
+/** Handles keyboard and mouse input for the game interface. 
+ * 
+ * Manages input events and coordinates between pixel space and game grid space.
+ * @author Claude */
 public class InputManager {
     // Key event handling
-    private Queue<KeyEvent> keyEvents = new LinkedList<>();
+    private final Queue<KeyEvent> keyEvents = new LinkedList<>();
     private final Object keyLock = new Object();
     
     // Mouse event handling
@@ -23,25 +26,31 @@ public class InputManager {
     private float charWidth = 0;
     private float charHeight = 0;
 
-    /** Initialize input handlers for the provided text area */
-    public void initialize(JTextArea textArea, int gridWidth, int gridHeight) {
+    /** Initialize input handlers for any component */
+    public void initialize(Component component, int gridWidth, int gridHeight) {
+        Game.LOGGER.log(Level.INFO, "Initializing InputManager with " + component.getClass().getSimpleName());
+        
         // Add key listener to capture keyboard input
-        textArea.addKeyListener(new KeyAdapter() {
+        component.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
                 synchronized (keyLock) {
                     keyEvents.add(e);
+                    // Only log important keys like ESC, not every keystroke
+                    if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                        Game.LOGGER.log(Level.INFO, "Key pressed: " + KeyEvent.getKeyText(e.getKeyCode()));
+                    }
                 }
             }
         });
         
         // Add mouse listeners for mouse input
-        textArea.addMouseListener(new MouseAdapter() {
+        component.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
                 synchronized (mouseLock) {
                     mousePressed = true;
-                    updateMousePosition(e, textArea, gridWidth, gridHeight);
+                    updateMousePosition(e, component, gridWidth, gridHeight);
                 }
             }
             
@@ -49,7 +58,7 @@ public class InputManager {
             public void mouseReleased(MouseEvent e) {
                 synchronized (mouseLock) {
                     mousePressed = false;
-                    updateMousePosition(e, textArea, gridWidth, gridHeight);
+                    updateMousePosition(e, component, gridWidth, gridHeight);
                 }
             }
             
@@ -61,59 +70,51 @@ public class InputManager {
                     } else if (e.getButton() == MouseEvent.BUTTON3) {
                         rightMouseClicked = true;
                     }
-                    updateMousePosition(e, textArea, gridWidth, gridHeight);
+                    updateMousePosition(e, component, gridWidth, gridHeight);
                 }
             }
         });
         
-        textArea.addMouseMotionListener(new MouseMotionAdapter() {
+        component.addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
-                updateMousePosition(e, textArea, gridWidth, gridHeight);
+                updateMousePosition(e, component, gridWidth, gridHeight);
             }
             
             @Override
             public void mouseDragged(MouseEvent e) {
                 synchronized (mouseLock) {
                     mousePressed = true;
-                    updateMousePosition(e, textArea, gridWidth, gridHeight);
+                    updateMousePosition(e, component, gridWidth, gridHeight);
                 }
             }
         });
     }
 
-    private void updateMousePosition(MouseEvent e, JTextArea textArea, int gridWidth, int gridHeight) {
+    private void updateMousePosition(MouseEvent e, Component component, int gridWidth, int gridHeight) {
         synchronized (mouseLock) {
             // Calculate character dimensions if not set
             if (charWidth == 0 || charHeight == 0) {
-                FontMetrics metrics = textArea.getFontMetrics(textArea.getFont());
-                String testText = "ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz0123456789";
-                charWidth = metrics.stringWidth(testText) / testText.length();
-                charHeight = metrics.getHeight();
+                FontMetrics metrics = component.getFontMetrics(component.getFont());
+                charWidth = metrics.charWidth('W'); // 10
+                charHeight = metrics.getHeight(); // 14
                 
-                // Log the character dimensions once they're calculated
-                Game.LOGGER.log(Level.INFO, "Character dimensions: width="+charWidth+", height="+charHeight);
+                Game.LOGGER.log(Level.INFO, "Character dimensions: width=" + charWidth + ", height=" + charHeight);
             }
             
             // Log raw mouse position and calculations
             float rawX = e.getX();
             float rawY = e.getY();
-            float calcX = rawX / charWidth;
-            float calcY = rawY / charHeight;
             
             // Convert pixel coordinates to grid coordinates
-            mouseX = (int)Math.floor(rawX * charWidth / 84.6); // I DON'T KNOW WHY THIS WORKS
-            // TODO: Find out why this works
-            
-            // Apply similar logic to Y-coordinate
-            mouseY = Math.max(0, (int)Math.floor(rawY / charHeight));
+            // For X: each cell is approximately 0.9 * charWidth pixels
+            // For Y: each cell is approximately 1.36 * charHeight pixels
+            mouseX = (int)Math.floor(rawX / (charWidth * 0.9));
+            mouseY = (int)Math.floor(rawY / (charHeight * 1.36));
             
             // Ensure coordinates are within bounds
             mouseX = Math.max(0, Math.min(gridWidth - 1, mouseX));
             mouseY = Math.max(0, Math.min(gridHeight - 1, mouseY));
-            
-            // Log detailed conversion information
-            // Game.LOGGER.log(Level.INFO, "Mouse coord conversion: raw=(" + rawX + "," + rawY + ") → calc=(" + calcX + "," + calcY + ") → grid=(" + mouseX + "," + mouseY + ")");
         }
     }
     

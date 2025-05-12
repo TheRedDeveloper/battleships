@@ -34,7 +34,7 @@ public class BuildMode extends GameMode {
     @Override
     public void render(GameState gameState, AsciiDisplay display) {
         display.clearBuffer();
-        
+
         display.drawString(SHIP_SELECT_START_X, SHIP_SELECT_START_Y, "Ship Selection:");
         int ry = 1; // "Ship Selection:" is on row 0
         for (ShipType shipType : ShipType.values()) {
@@ -49,11 +49,12 @@ public class BuildMode extends GameMode {
             }
         }
 
-        // Fill grid with water
+        // Fill grid with blue water
         for (int y = 0; y < GRID_SIZE; y++) {
             for (int x = 0; x < GRID_SIZE; x++) {
-                display.setCharacter(GRID_START_X + x * CELL_WIDTH, GRID_START_Y + y, '~');
-                display.setCharacter(GRID_START_X + x * CELL_WIDTH + 1, GRID_START_Y + y, '~');
+                String waveColor = (x + y) % 2 == 0 ? ANSI.BLUE : ANSI.BRIGHT_BLUE;
+                display.setCharacter(GRID_START_X + x * CELL_WIDTH, GRID_START_Y + y, '~', waveColor);
+                display.setCharacter(GRID_START_X + x * CELL_WIDTH + 1, GRID_START_Y + y, '~', waveColor);
             }
         }
 

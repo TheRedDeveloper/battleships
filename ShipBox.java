@@ -7,13 +7,16 @@ public class ShipBox extends Box {
     private final String[] rowsToDisplay;
     /** Storing the original direction enables us to call {@link ShipBox#inDirection(Direction)} multiple times */
     private final Direction originalDirection;
+    private final String color;
 
-    public ShipBox(int sx, int sy, boolean[][] atIsShip, String[] rowsToDisplay, Direction originalDirection) {
+    public ShipBox(int sx, int sy, boolean[][] atIsShip, String[] rowsToDisplay, Direction originalDirection, String color) {
         super(sx, sy);
         this.atIsShip = atIsShip;
         this.rowsToDisplay = rowsToDisplay;
         this.originalDirection = originalDirection;
+        this.color = color;
     }
+
     public boolean isShipAtRelativeCoordinates(int x, int y) {
         if (x < 0 || x >= sx || y < 0 || y >= sy) {
             return false;
@@ -36,8 +39,9 @@ public class ShipBox extends Box {
     
     /** Display the ship box at the given coordinates on the display */
     public void displayFromAbsoluteTopLeftOn(int x, int y, AsciiDisplay display) {
-        for (int i = 0; i < rowsToDisplay.length; i++) {
-            display.drawString(x, y + i, rowsToDisplay[i]);
+        for (int dispY = 0; dispY < rowsToDisplay.length; dispY++) {
+            String row = rowsToDisplay[dispY];
+            display.drawTransparentString(x, y + dispY, row, this.color);
         }
     }
 
@@ -46,7 +50,7 @@ public class ShipBox extends Box {
         RotationDirection rotation = RotationDirection.fromToDirection(originalDirection, direction);
         int newWidth = (rotation == RotationDirection.CLOCKWISE || rotation == RotationDirection.COUNTER_CLOCKWISE) ? sy : sx;
         int newHeight = (rotation == RotationDirection.CLOCKWISE || rotation == RotationDirection.COUNTER_CLOCKWISE) ? sx : sy;
-        return new ShipBox(newWidth, newHeight, rotateBooleanMatrix(atIsShip, rotation), rotateStringArray(rowsToDisplay, rotation), direction);
+        return new ShipBox(newWidth, newHeight, rotateBooleanMatrix(atIsShip, rotation), rotateStringArray(rowsToDisplay, rotation), direction, this.color);
     }
     
     private boolean[][] rotateBooleanMatrix(boolean[][] matrix, RotationDirection direction) {

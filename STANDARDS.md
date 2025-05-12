@@ -80,6 +80,44 @@ This guide itself is AI-generated, but the standards are mine.
 - Method names use camelCase starting with lowercase letters
 - Clear, descriptive names for methods describing their action
 
+### Logging
+- Always use `Game.LOGGER` for logging, never create new logger instances
+- Use string concatenation with `+` for log messages, not object notation:
+  ```java
+  // Good
+  Game.LOGGER.info("Player " + playerName + " fired at " + x + "," + y);
+  
+  // Bad
+  Game.LOGGER.info(new Object[]{"Player", playerName, "fired at", x, y});
+  ```
+
+### Switch Statements
+- Prefer enhanced switch expressions over traditional switch statements when possible:
+  ```java
+  // Preferred (expression-based switch)
+  String message = switch(direction) {
+      case UP -> "Moving up";
+      case DOWN -> "Moving down";
+      case LEFT -> "Moving left";
+      case RIGHT -> "Moving right";
+      default -> "Not moving";
+  };
+  
+  // Avoid when not necessary (traditional switch)
+  String message;
+  switch(direction) {
+      case UP:
+          message = "Moving up";
+          break;
+      case DOWN:
+          message = "Moving down";
+          break;
+      // etc.
+  }
+  ```
+- Always include a default case in switch statements/expressions
+- Prefer switch expressions over large if else blocks for cleaner code
+
 ## Class Hierarchy and Design Patterns
 
 ### Geometric Classes Explained
