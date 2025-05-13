@@ -1,4 +1,5 @@
 import java.awt.event.KeyEvent;
+import java.time.Duration;
 import java.util.logging.Level;
 
 public class BuildMode extends GameMode {
@@ -66,7 +67,7 @@ public class BuildMode extends GameMode {
     }
     
     @Override
-    public GameState update(GameState gameState, InputManager inputManager) {
+    public GameState update(GameState gameState, InputManager inputManager, Duration deltaTime) {
         while (inputManager.hasKeyEvents()) {
             KeyEvent event = inputManager.pollKeyEvent();
             switch (event.getKeyCode()) {

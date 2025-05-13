@@ -1,3 +1,5 @@
+import java.time.Duration;
+import java.time.Instant;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -8,6 +10,11 @@ public class Game {
     private static GameState state = new GameState(StartMenuMode.getInstance());
     private static boolean isRunning;
     public static final Logger LOGGER = Logger.getLogger(Game.class.getName());
+    private static Instant startTime;
+
+    public static Duration getTimeSinceStart() {
+        return Duration.between(startTime, Instant.now());
+    }
     
     static {
         // Configure logger with custom formatter for better readability
@@ -33,6 +40,7 @@ public class Game {
         try {
             LOGGER.log(Level.INFO, "Starting game...");
             isRunning = true;
+            startTime = Instant.now();
             
             LOGGER.log(Level.INFO, "Initializing display...");
             InputManager inputManager = new InputManager();
@@ -47,9 +55,11 @@ public class Game {
             StartMenuMode.getInstance().enter();
             
             LOGGER.log(Level.INFO, "Entering game loop...");
+            Instant lastTime = Instant.now();
             while (isRunning) {
                 state.getMode().render(state, display);
-                state = state.getMode().update(state, inputManager);
+                state = state.getMode().update(state, inputManager, Duration.between(lastTime, Instant.now()));
+                lastTime = Instant.now();
                 
                 Thread.sleep(50);
             }

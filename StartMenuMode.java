@@ -1,4 +1,5 @@
 import java.awt.event.KeyEvent;
+import java.time.Duration;
 
 /** @author Claude */
 public class StartMenuMode extends GameMode {
@@ -45,7 +46,7 @@ public class StartMenuMode extends GameMode {
                 for (int y = 15; y < 20; y++) {
                     for (int x = 0; x < 50; x++) {
                         // Alternate between regular and bright blue for a wavy effect
-                        String waveColor = (x + y) % 2 == 0 ? ANSI.BLUE : ANSI.BRIGHT_BLUE;
+                        String waveColor = (x + y + Game.getTimeSinceStart().toSeconds()) % 2 == 0 ? ANSI.BLUE : ANSI.BRIGHT_BLUE;
                         display.setCharacter(x, y, '~', waveColor);
                     }
                 }
@@ -74,7 +75,7 @@ public class StartMenuMode extends GameMode {
     }
     
     @Override
-    public GameState update(GameState gameState, InputManager inputManager) {
+    public GameState update(GameState gameState, InputManager inputManager, Duration deltaTime) {
         while (inputManager.hasKeyEvents()) {
             KeyEvent keyEvent = inputManager.pollKeyEvent();
             if (keyEvent != null) {
