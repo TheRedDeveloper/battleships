@@ -63,7 +63,7 @@ public class AsciiDisplay {
             charHeight = metrics.getHeight();
             
             // Set preferred size based on character dimensions
-            setPreferredSize(new Dimension(charWidth * GRID_WIDTH, charHeight * GRID_HEIGHT));
+            setPreferredSize(new Dimension((int)(charWidth * GRID_WIDTH * 0.9), charHeight * GRID_HEIGHT));
         }
         
         @Override

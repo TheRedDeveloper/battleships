@@ -53,7 +53,7 @@ public class BuildMode extends GameMode {
         // Fill grid with blue water
         for (int y = 0; y < GRID_SIZE; y++) {
             for (int x = 0; x < GRID_SIZE; x++) {
-                String waveColor = (x + y) % 2 == 0 ? ANSI.BLUE : ANSI.BRIGHT_BLUE;
+                String waveColor = (x + y + Game.getTimeSinceStart().toMillis() / 1500) % 2 == 0 ? ANSI.BLUE : ANSI.BRIGHT_BLUE;
                 display.setCharacter(GRID_START_X + x * CELL_WIDTH, GRID_START_Y + y, '~', waveColor);
                 display.setCharacter(GRID_START_X + x * CELL_WIDTH + 1, GRID_START_Y + y, '~', waveColor);
             }
