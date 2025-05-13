@@ -30,13 +30,12 @@ I hope this works in Java.
 
 [ ] I should write a fucking formatter in python for my weird txt UML diagrams
 
-
-
-I havent touched this file in a while.
-[ ] Provide delta time acess
-[ ] Make beautiful credits screen
-[ ] Add ability to pick ships up again
-[ ] Add ship crashing functionality
+[X] Provide delta time acess
+[X] Make beautiful credits screen
+[X] Add ship crashing functionality
+[X] Add ability to pick ships up
+[ ] Display on the screen that you can rotate
+[ ] Add a count of availible ships
 
 [ ] Add main mode
 [ ] Add mouse calibration

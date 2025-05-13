@@ -58,6 +58,12 @@ public class Grid {
         return ships.get(id);
     }
 
+    public Ship getShipAt(int x, int y) {
+        UUID id = tiles[x][y].containedShip;
+        if (id == null) { return null; }
+        return getShip(id);
+    }
+
     private void removeOccupation(Ship ship) {
         for (Position pos : ship.getOccupiedPositions()) {
             if (tiles[pos.x][pos.y].containedShip == null) {

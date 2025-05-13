@@ -1,18 +1,19 @@
 import java.util.ArrayList;
 import java.util.List;
 
-/** The box of a shiptype on the grid */
+/** The box of a shiptype on the grid @author RedDev */
 public class ShipBox extends Box {
-    private final boolean[][] atIsShip;
-    private final String[] rowsToDisplay;
+    private final boolean[][] occupationMatrix;
     /** Storing the original direction enables us to call {@link ShipBox#inDirection(Direction)} multiple times */
     private final Direction originalDirection;
     private final String color;
 
-    public ShipBox(int sx, int sy, boolean[][] atIsShip, String[] rowsToDisplay, Direction originalDirection, String color) {
+    public ShipBox(int sx, int sy, boolean[][] occupationMatrix, Direction originalDirection, String color) {
         super(sx, sy);
-        this.atIsShip = atIsShip;
-        this.rowsToDisplay = rowsToDisplay;
+        if (occupationMatrix.length > sy || (occupationMatrix.length > 0 && occupationMatrix[0].length > sx)) {
+            throw new IllegalArgumentException("occupationMatrix dimensions cannot exceed sx and sy");
+        }
+        this.occupationMatrix = occupationMatrix;
         this.originalDirection = originalDirection;
         this.color = color;
     }
@@ -21,7 +22,7 @@ public class ShipBox extends Box {
         if (x < 0 || x >= sx || y < 0 || y >= sy) {
             return false;
         }
-        return atIsShip[y][x];
+        return occupationMatrix[y][x];
     }
 
     /** List of positions occupied by the ShipBox */
@@ -29,7 +30,7 @@ public class ShipBox extends Box {
         List<Position> positions = new ArrayList<>();
         for (int y = 0; y < sy; y++) {
             for (int x = 0; x < sx; x++) {
-                if (atIsShip[y][x]) {
+                if (occupationMatrix[y][x]) {
                     positions.add(new Position(x, y));
                 }
             }
@@ -37,11 +38,12 @@ public class ShipBox extends Box {
         return positions;
     }
     
-    /** Display the ship box at the given coordinates on the display */
-    public void displayFromAbsoluteTopLeftOn(int x, int y, AsciiDisplay display) {
-        for (int dispY = 0; dispY < rowsToDisplay.length; dispY++) {
-            String row = rowsToDisplay[dispY];
+    /** Display the ship box as character at the given coordinates on the display with cellWidth*/
+    public void displayFromAbsoluteTopLeftOn(int x, int y, AsciiDisplay display, char character, int cellWidth) {
+        int dispY = 0;
+        for (String row : makeStringRows(character, cellWidth)) {
             display.drawTransparentString(x, y + dispY, row, this.color);
+            dispY++;
         }
     }
 
@@ -50,7 +52,24 @@ public class ShipBox extends Box {
         RotationDirection rotation = RotationDirection.fromToDirection(originalDirection, direction);
         int newWidth = (rotation == RotationDirection.CLOCKWISE || rotation == RotationDirection.COUNTER_CLOCKWISE) ? sy : sx;
         int newHeight = (rotation == RotationDirection.CLOCKWISE || rotation == RotationDirection.COUNTER_CLOCKWISE) ? sx : sy;
-        return new ShipBox(newWidth, newHeight, rotateBooleanMatrix(atIsShip, rotation), rotateStringArray(rowsToDisplay, rotation), direction, this.color);
+        return new ShipBox(newWidth, newHeight, rotateBooleanMatrix(occupationMatrix, rotation), direction, this.color);
+    }
+
+    /** occupationMatrix = {{true, true}}, character = 1, cellWidth = 2 -> {"####"} */
+    private String[] makeStringRows(char character, int cellWidth) {
+        String[] rows = new String[occupationMatrix.length];
+        for (int i = 0; i < occupationMatrix.length; i++) {
+            StringBuilder rowBuilder = new StringBuilder();
+            for (boolean isOccupied : occupationMatrix[i]) {
+                if (isOccupied) {
+                    rowBuilder.append(String.valueOf(character).repeat(cellWidth));
+                } else {
+                    rowBuilder.append(" ".repeat(cellWidth));
+                }
+            }
+            rows[i] = rowBuilder.toString();
+        }
+        return rows;
     }
     
     private boolean[][] rotateBooleanMatrix(boolean[][] matrix, RotationDirection direction) {
@@ -89,52 +108,6 @@ public class ShipBox extends Box {
             }
 
             case NONE -> matrix;                
-            default -> throw new IllegalArgumentException("Unknown rotation direction");
-        };
-    }
-    
-    private String[] rotateStringArray(String[] array, RotationDirection direction) {
-        if (array.length == 0) return new String[0];
-        int height = array.length;
-        int width = array[0].length();
-        
-        return switch (direction) {
-            case CLOCKWISE -> {
-                String[] rotated = new String[width];
-                for (int j = 0; j < width; j++) {
-                    StringBuilder sb = new StringBuilder();
-                    for (int i = height - 1; i >= 0; i--) {
-                        sb.append(j < array[i].length() ? array[i].charAt(j) : ' ');
-                    }
-                    rotated[j] = sb.toString();
-                }
-                yield rotated;
-            }
-                
-            case COUNTER_CLOCKWISE -> {
-                String[] rotated = new String[width];
-                for (int j = 0; j < width; j++) {
-                    StringBuilder sb = new StringBuilder();
-                    for (int i = 0; i < height; i++) {
-                        sb.append((width - 1 - j) < array[i].length() ? array[i].charAt(width - 1 - j) : ' ');
-                    }
-                    rotated[j] = sb.toString();
-                }
-                yield rotated;
-            }
-                
-            case FLIP -> {
-                String[] rotated = new String[height];
-                for (int i = 0; i < height; i++) {
-                    StringBuilder sb = new StringBuilder(array[height - 1 - i]);
-                    sb.reverse();
-                    rotated[i] = sb.toString();
-                }
-                yield rotated;
-            }
-
-            case NONE -> array.clone();
-                
             default -> throw new IllegalArgumentException("Unknown rotation direction");
         };
     }

@@ -4,8 +4,8 @@
  * 
  *  This class is important for ensuring code standards. */
 public class Box {
-    public int sx;
-    public int sy;
+    protected int sx;
+    protected int sy;
 
     public int getWidth() {
         return sx;

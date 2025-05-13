@@ -12,36 +12,28 @@ public class Ship {
     private int x;
     private int y;
     private UUID id; public UUID getId() { return id; }
-    private Direction direction;
+    private Direction direction; public Direction getDirection() { return direction; }
 
     protected static final Map<ShipType, ShipBox> boxByType = initializeBoxes();
     private static Map<ShipType, ShipBox> initializeBoxes() {
         EnumMap<ShipType, ShipBox> boxMap = new EnumMap<>(ShipType.class);
         
         boxMap.put(ShipType.BATTLESHIP4X1, new ShipBox(4, 1, 
-            new boolean[][]{{true, true, true, true}}, 
-            new String[]{"########"}, Direction.RIGHT, ANSI.BRIGHT_RED));
+            new boolean[][]{{true, true, true, true}}, Direction.RIGHT, ANSI.BRIGHT_RED));
         
         boxMap.put(ShipType.CRUISER3X1, new ShipBox(3, 1, 
-            new boolean[][]{{true, true, true}}, 
-            new String[]{"######"}, Direction.RIGHT, ANSI.YELLOW));
+            new boolean[][]{{true, true, true}}, Direction.RIGHT, ANSI.YELLOW));
         
         boxMap.put(ShipType.DESTROYER2X1, new ShipBox(2, 1, 
-            new boolean[][]{{true, true}}, 
-            new String[]{"####"}, Direction.RIGHT, ANSI.BRIGHT_GREEN));
+            new boolean[][]{{true, true}}, Direction.RIGHT, ANSI.BRIGHT_GREEN));
         
         boxMap.put(ShipType.SUBMARINE1X1, new ShipBox(1, 1, 
-            new boolean[][]{{true}}, 
-            new String[]{"##"}, Direction.RIGHT, ANSI.WHITE));
+            new boolean[][]{{true}}, Direction.RIGHT, ANSI.WHITE));
         
         boxMap.put(ShipType.U, new ShipBox(3, 2, 
             new boolean[][]{
                 {true, true, true},
                 {true, false, true}
-            },
-            new String[]{
-                "######",
-                "##  ##"
             }, Direction.RIGHT, ANSI.CYAN));
         
         return boxMap;
@@ -66,12 +58,16 @@ public class Ship {
             .toList();
     }
 
+    public boolean isUsingOccupiedTiles(Grid grid) {
+        return getOccupiedPositions().stream().anyMatch(pos -> grid.getTile(pos.x, pos.y).isOccupied());
+    }
+
     public Rect asRect() { return new Rect(x, y, getShipBox()); }
 
-    public void displayFromOrigin(int originX, int originY, AsciiDisplay display) {
+    public void displayFromOrigin(int originX, int originY, AsciiDisplay display, char fillChar, int cellWidth) {
         ShipBox box = Ship.boxByType.get(type);
         box = box.inDirection(direction);
-        box.displayFromAbsoluteTopLeftOn(originX + x * 2, originY + y, display);
+        box.displayFromAbsoluteTopLeftOn(originX + x * 2, originY + y, display, fillChar, cellWidth);
     }
 
     public ShipType getType() {

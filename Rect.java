@@ -5,8 +5,8 @@
  * 
  *  This class is important for ensuring code standards. */
 public class Rect extends Box {
-    public int x;
-    public int y;
+    protected int x;
+    protected int y;
 
     public Rect(int x, int y, int sx, int sy) {
         super(sx, sy);

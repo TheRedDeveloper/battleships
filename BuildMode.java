@@ -8,6 +8,9 @@ public class BuildMode extends GameMode {
     private ShipType selectedShipType; // Null if no ship selected
     private Direction selectedDirection = Direction.RIGHT;
     private ShipType[] shipTypeSelectorOnRow = new ShipType[AsciiDisplay.getGridHeight()];
+    private Position previewLocation = new Position(0, 0);
+    private Boolean isPickUpSelected = false;
+    private int pickUpShipRow;
 
     Position oldPos = new Position(0, 0);
     
@@ -40,7 +43,7 @@ public class BuildMode extends GameMode {
         int ry = 1; // "Ship Selection:" is on row 0
         for (ShipType shipType : ShipType.values()) {
             ShipBox box = Ship.boxByType.get(shipType);
-            box.displayFromAbsoluteTopLeftOn(SHIP_SELECT_START_X, SHIP_SELECT_START_Y + ry, display);
+            box.displayFromAbsoluteTopLeftOn(SHIP_SELECT_START_X, SHIP_SELECT_START_Y + ry, display, '#', CELL_WIDTH);
             for (int i = 0; i < box.getHeight(); i++) {
                 shipTypeSelectorOnRow[ry + i] = shipType;
             }
@@ -49,6 +52,11 @@ public class BuildMode extends GameMode {
                 display.drawString(SHIP_SELECT_START_X - 2, SHIP_SELECT_START_Y + ry - box.getHeight() - 1, ">");
             }
         }
+        display.drawString(SHIP_SELECT_START_X, SHIP_SELECT_START_Y + ry, "Pick up");
+        if (isPickUpSelected) {
+            display.drawString(SHIP_SELECT_START_X - 2, SHIP_SELECT_START_Y + ry, ">");
+        }
+        pickUpShipRow = SHIP_SELECT_START_Y + ry;
 
         // Fill grid with blue water
         for (int y = 0; y < GRID_SIZE; y++) {
@@ -59,8 +67,17 @@ public class BuildMode extends GameMode {
             }
         }
 
+        // Draw preview ship
+        if (selectedShipType != null && previewLocation != null) {
+            Ship ship = new Ship(selectedShipType, previewLocation.x, previewLocation.y, selectedDirection);
+            if(ship.getShipBox().getHeight() + previewLocation.y <= GRID_SIZE && ship.getShipBox().getWidth() + previewLocation.x <= GRID_SIZE) {
+                char displayChar = ship.isUsingOccupiedTiles(gameState.grids.get(0)) ? 'X' : '0';
+                ship.displayFromOrigin(GRID_START_X, GRID_START_Y, display, displayChar, CELL_WIDTH);
+            }
+        }
+
         for (Ship ship : gameState.grids.get(0).getShips()) {
-            ship.displayFromOrigin(GRID_START_X, GRID_START_Y, display);
+            ship.displayFromOrigin(GRID_START_X, GRID_START_Y, display, '#', CELL_WIDTH);
         }
 
         display.refreshDisplay();
@@ -94,29 +111,53 @@ public class BuildMode extends GameMode {
         if (isMouseInGrid) {
             int mouseGridX = (mousePos.x - GRID_START_X) / CELL_WIDTH;
             int mouseGridY = mousePos.y - GRID_START_Y;
+            previewLocation = selectedShipType != null ? new Position(mouseGridX, mouseGridY) : null;
+
             if (!mousePos.equals(oldPos)) {
                 oldPos = mousePos;
                 Game.LOGGER.log(Level.INFO, mousePos.toString() + ": " + mouseGridX + ", " + mouseGridY);
             }
-            
-            if (isMouseClicked && selectedShipType != null) {
-                Game.LOGGER.log(Level.INFO, "Adding ship: " + selectedShipType + " at " + mouseGridX + ", " + mouseGridY);
-                gameState.grids.get(0).addShip(new Ship(selectedShipType, mouseGridX, mouseGridY, selectedDirection));
-                selectedShipType = null;
+
+            if (isMouseClicked) {
+                Grid grid = gameState.grids.get(0);
+                if (isPickUpSelected) {
+                    Ship ship = grid.getShipAt(mouseGridX, mouseGridY);
+                    if (ship != null) {
+                        selectedShipType = ship.getType();
+                        selectedDirection = ship.getDirection();
+                        grid.removeShip(ship.getId());
+                        isPickUpSelected = false;
+                    }
+                } else if (selectedShipType != null) {
+                    Ship ship = new Ship(selectedShipType, mouseGridX, mouseGridY, selectedDirection);
+                    if (ship.getShipBox().getHeight() + mouseGridY <= GRID_SIZE &&
+                        ship.getShipBox().getWidth() + mouseGridX <= GRID_SIZE &&
+                        !ship.isUsingOccupiedTiles(grid)) {
+                        
+                        Game.LOGGER.log(Level.INFO, "Adding ship: " + selectedShipType + " at " + mouseGridX + ", " + mouseGridY);
+                        grid.addShip(ship);
+                        selectedShipType = null;
+                    }
+                }
             }
         } else {
+            previewLocation = null;
             if (!mousePos.equals(oldPos)) {
                 oldPos = mousePos;
                 Game.LOGGER.log(Level.INFO, mousePos.toString());
             }
 
-            if (mousePos.y >= SHIP_SELECT_START_Y && 
+            if (mousePos.y == pickUpShipRow && isMouseClicked) {
+                isPickUpSelected = true;
+                selectedShipType = null;
+            } else if (mousePos.y >= SHIP_SELECT_START_Y && 
                 mousePos.y < SHIP_SELECT_START_Y + shipTypeSelectorOnRow.length) {
                 
                 ShipType hoveredType = shipTypeSelectorOnRow[mousePos.y - SHIP_SELECT_START_Y];
                 if (hoveredType != null && isMouseClicked) {
                     selectedShipType = hoveredType;
                     selectedDirection = Direction.RIGHT;
+                    isPickUpSelected = false;
                 }
             }
         }

@@ -6,4 +6,8 @@ public class Tile {
         this.data = data;
         this.position = position;
     }
+
+    public boolean isOccupied() {
+        return data.containedShip != null;
+    }
 }
