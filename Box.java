@@ -23,6 +23,18 @@ public class Box {
         return sx * sy;
     }
 
+    public int getPerimeter() {
+        return 2 * (sx + sy);
+    }
+
+    public int getDiagonal() {
+        return (int) Math.sqrt(sx * sx + sy * sy);
+    }
+
+    public Position getRelativeCenter() {
+        return new Position(sx / 2, sy / 2);
+    }
+
     @Override
     public String toString() {
         return "Box[" + sx + "x" + sy + "]";

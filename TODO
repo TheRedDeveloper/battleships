@@ -34,8 +34,9 @@ I hope this works in Java.
 [X] Make beautiful credits screen
 [X] Add ship crashing functionality
 [X] Add ability to pick ships up
-[ ] Display on the screen that you can rotate
-[ ] Add a count of availible ships
+[X] Display on the screen that you can rotate
+[X] Add a count of availible ships
+[X] Center the ships when placing
 
 [ ] Add main mode
 [ ] Add mouse calibration
