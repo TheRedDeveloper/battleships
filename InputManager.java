@@ -1,5 +1,4 @@
 import java.awt.Component;
-import java.awt.FontMetrics;
 import java.awt.event.*;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -10,11 +9,17 @@ import java.util.logging.Level;
  * Manages input events and coordinates between pixel space and game grid space.
  * @author Claude */
 public class InputManager {
+    // Calibration factors for converting pixel coordinates to grid coordinates
+    private float calibrationFactorX = 1/9f;
+    private float calibrationFactorY = 1/19.04f;
+
     // Key event handling
     private final Queue<KeyEvent> keyEvents = new LinkedList<>();
     private final Object keyLock = new Object();
     
     // Mouse event handling
+    private int rawX = 0;
+    private int rawY = 0;
     private int mouseX = 0;
     private int mouseY = 0;
     private boolean mousePressed = false;
@@ -93,24 +98,11 @@ public class InputManager {
 
     private void updateMousePosition(MouseEvent e, Component component, int gridWidth, int gridHeight) {
         synchronized (mouseLock) {
-            // Calculate character dimensions if not set
-            if (charWidth == 0 || charHeight == 0) {
-                FontMetrics metrics = component.getFontMetrics(component.getFont());
-                charWidth = metrics.charWidth('W'); // 10
-                charHeight = metrics.getHeight(); // 14
-                
-                Game.LOGGER.log(Level.INFO, "Character dimensions: width=" + charWidth + ", height=" + charHeight);
-            }
-            
-            // Log raw mouse position and calculations
-            float rawX = e.getX();
-            float rawY = e.getY();
-            
             // Convert pixel coordinates to grid coordinates
-            // For X: each cell is approximately 0.9 * charWidth pixels
-            // For Y: each cell is approximately 1.36 * charHeight pixels
-            mouseX = (int)Math.floor(rawX / (charWidth * 0.9));
-            mouseY = (int)Math.floor(rawY / (charHeight * 1.36));
+            rawX = e.getX();
+            rawY = e.getY();
+            mouseX = (int)Math.floor(rawX * calibrationFactorX);
+            mouseY = (int)Math.floor(rawY * calibrationFactorY);
             
             // Ensure coordinates are within bounds
             mouseX = Math.max(0, Math.min(gridWidth - 1, mouseX));
@@ -165,5 +157,19 @@ public class InputManager {
             rightMouseClicked = false;
             return result;
         }
+    }
+
+    /** Calibrate by the cursor being at the center of Position[49, 23] (49.5 23.5) */
+    public void calibrate() {
+        // Calculate the calibration factors based on the given raw coordinates
+        calibrationFactorX = 49.5f / rawX;
+        calibrationFactorY = 23.5f / rawY;
+
+        Game.calibrateDisplay((int) (rawX / 49.5), (int) (rawY / 23.5));
+        
+        // Log the calibration factors for debugging
+        Game.LOGGER.log(Level.INFO, "Calibration input: rawX = " + rawX + ", rawY = " + rawY);
+        Game.LOGGER.log(Level.INFO, "Calibration factors set: X = " + calibrationFactorX + ", Y = " + calibrationFactorY);
+        
     }
 }

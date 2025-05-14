@@ -1,4 +1,5 @@
 public enum StartMenuScreen {
     MAIN,
-    CREDITS
+    CREDITS,
+    CALIBRATE
 }

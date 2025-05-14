@@ -20,6 +20,9 @@ public class AsciiDisplay {
     private JFrame frame;
     private DisplayPanel panel;
     private InputManager inputManager;
+
+    private int calibrationWidth = 9;
+    private int calibrationHeight = 19;
     
     /** Panel that renders the character grid with colors */
     private class DisplayPanel extends JPanel {
@@ -61,9 +64,9 @@ public class AsciiDisplay {
             FontMetrics metrics = getFontMetrics(font);
             charWidth = metrics.charWidth('W');
             charHeight = metrics.getHeight();
-            
+
             // Set preferred size based on character dimensions
-            setPreferredSize(new Dimension((int)(charWidth * GRID_WIDTH * 0.9), charHeight * GRID_HEIGHT));
+            setPreferredSize(new Dimension(GRID_WIDTH * calibrationWidth, GRID_HEIGHT * calibrationHeight));
         }
         
         @Override
@@ -176,6 +179,27 @@ public class AsciiDisplay {
                 colorBuffer[y][x] = Color.WHITE;
                 backgroundBuffer[y][x] = Color.BLACK;
             }
+        }
+    }
+
+    /**
+     * Resizes the display panel to the specified dimensions
+     */
+    public void resize(int width, int height) {
+        if (panel != null) {
+            panel.setPreferredSize(new Dimension(width, height));
+            panel.setSize(new Dimension(width, height));
+            frame.pack();
+        }
+    }
+
+    /**
+     * Calibrates the display panel with new character width and height values
+     */
+    public void calibrate(int calibrationX, int calibrationY) {
+        if (panel != null) {
+            calibrationWidth = calibrationX + 1;
+            resize(GRID_WIDTH * calibrationWidth, GRID_HEIGHT * calibrationHeight);
         }
     }
     

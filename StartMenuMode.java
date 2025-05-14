@@ -14,6 +14,7 @@ public class StartMenuMode extends GameMode {
     private static final String[] MENU_OPTIONS = {
         "Start Game",
         "Credits",
+        "Calibrate",
         "Exit"
     };
     
@@ -141,6 +142,10 @@ public class StartMenuMode extends GameMode {
                 processKeyEvent(keyEvent, gameState);
             }
         }
+        if (inputManager.checkAndResetMouseClicked() && screen == StartMenuScreen.CALIBRATE) {
+            inputManager.calibrate();
+            screen = StartMenuScreen.MAIN;
+        }
         
         return gameState;
     }
@@ -205,7 +210,11 @@ public class StartMenuMode extends GameMode {
                 creditsStartTime = Game.getTimeSinceStart().toMillis();
                 showingCredits = true;
             }
-            case 2 -> {  // Exit
+            case 2 -> {  // Calibrate
+                screen = StartMenuScreen.CALIBRATE;
+                Game.resizeDisplay(10000, 10000);
+            }
+            case 3 -> {  // Exit
                 Game.stop();
             }
         }
@@ -254,6 +263,7 @@ public class StartMenuMode extends GameMode {
         switch (screen) {
             case MAIN -> renderMainMenu(display);
             case CREDITS -> renderCreditsScreen(display);
+            case CALIBRATE -> renderCalibrationScreen(display);
             default -> throw new AssertionError();
         }
     }
@@ -303,10 +313,16 @@ public class StartMenuMode extends GameMode {
         
         display.refreshDisplay();
     }
-    
-    //----------------------------------------------------------------------------
-    // MAIN MENU RENDERING COMPONENTS
-    //----------------------------------------------------------------------------
+
+    public void renderCalibrationScreen(AsciiDisplay display) {
+        display.clearBuffer();
+        
+        // Draw calibration instructions
+        display.drawString(2, 1, "BINGBONG", ANSI.BRIGHT_WHITE);
+        display.setCharacter(DISPLAY_WIDTH-1, DISPLAY_HEIGHT-1, '+', ANSI.BRIGHT_RED);
+        
+        display.refreshDisplay();
+    }
     
     /**
      * Renders the menu title at the top of the screen

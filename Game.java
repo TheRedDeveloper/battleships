@@ -11,6 +11,9 @@ public class Game {
     private static boolean isRunning;
     public static final Logger LOGGER = Logger.getLogger(Game.class.getName());
     private static Instant startTime;
+    private static AsciiDisplay display;
+    private static InputManager inputManager;
+
 
     public static Duration getTimeSinceStart() {
         return Duration.between(startTime, Instant.now());
@@ -43,8 +46,8 @@ public class Game {
             startTime = Instant.now();
             
             LOGGER.log(Level.INFO, "Initializing display...");
-            InputManager inputManager = new InputManager();
-            AsciiDisplay display = new AsciiDisplay(inputManager);
+            inputManager = new InputManager();
+            display = new AsciiDisplay(inputManager);
             
             LOGGER.log(Level.INFO, "Showing display window...");
             display.show();
@@ -84,5 +87,13 @@ public class Game {
         }
         
         Game.play();
+    }
+
+    public static void resizeDisplay(int width, int height) {
+        display.resize(width, height);
+    }
+
+    public static void calibrateDisplay(int calibrationX, int calibrationY) {
+        display.calibrate(calibrationX, calibrationY);
     }
 }

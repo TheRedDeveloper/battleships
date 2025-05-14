@@ -10,7 +10,7 @@ public class BuildMode extends GameMode {
     private ShipType selectedShipType; // Null if no ship selected
     private Direction selectedDirection = Direction.RIGHT;
     private ShipType[] shipTypeSelectorOnRow = new ShipType[AsciiDisplay.getGridHeight()];
-    private Position previewLocation = new Position(0, 0);
+    private Position previewLocation;
     private Boolean isPickUpSelected = false;
     private int pickUpShipRow;
     Position oldPos = new Position(0, 0);
@@ -110,6 +110,8 @@ public class BuildMode extends GameMode {
                 case KeyEvent.VK_H, KeyEvent.VK_LEFT:
                     selectedDirection = selectedDirection.rotated(RotationDirection.COUNTER_CLOCKWISE);
                     break;
+                case KeyEvent.VK_ENTER:
+                    gameState.setMode(AttackMode.getInstance());
                 default:
                     break;
             }
