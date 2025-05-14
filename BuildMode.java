@@ -154,12 +154,12 @@ public class BuildMode extends GameMode {
                         isPickUpSelected = false;
                     }
                 } else if (selectedShipType != null) {
-                    Ship ship = new Ship(selectedShipType, 
-                        (int)Math.round(mouseGridXUnrounded - Ship.boxByType.get(selectedShipType).inDirection(selectedDirection).getWidth()/2d),
-                        (int)Math.round(mouseGridYUnrounded - Ship.boxByType.get(selectedShipType).inDirection(selectedDirection).getHeight()/2d),
-                        selectedDirection);
-                    if (ship.getShipBox().getHeight() + mouseGridY <= GRID_SIZE &&
-                        ship.getShipBox().getWidth() + mouseGridX <= GRID_SIZE &&
+
+                    int shipX = (int)Math.round(mouseGridXUnrounded - Ship.boxByType.get(selectedShipType).inDirection(selectedDirection).getWidth()/2d);
+                    int shipY = (int)Math.round(mouseGridYUnrounded - Ship.boxByType.get(selectedShipType).inDirection(selectedDirection).getHeight()/2d);
+                    Ship ship = new Ship(selectedShipType, shipX, shipY, selectedDirection);
+                    if (ship.getShipBox().getHeight() + shipY <= GRID_SIZE &&
+                        ship.getShipBox().getWidth() + shipX <= GRID_SIZE &&
                         !ship.isUsingOccupiedTiles(grid)) {
                         
                         Game.LOGGER.log(Level.INFO, "Adding ship: " + selectedShipType + " at " + mouseGridX + ", " + mouseGridY);
