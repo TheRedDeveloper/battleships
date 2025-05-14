@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -84,6 +85,18 @@ public class Grid {
             }
             tiles[pos.x][pos.y].containedShip = ship.getId();
         }
+    }
+
+    public Collection<Tile> getHitTiles() {
+        Collection<Tile> hitTiles = new ArrayList<>();
+        for (int x = 0; x < tiles.length; x++) {
+            for (int y = 0; y < tiles[x].length; y++) {
+                if (tiles[x][y].isShot) {
+                    hitTiles.add(new Tile(tiles[x][y], new Position(x, y)));
+                }
+            }
+        }
+        return hitTiles;
     }
 
     @Override

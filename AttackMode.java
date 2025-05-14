@@ -35,8 +35,19 @@ public class AttackMode extends GameMode {
             }
         }
 
-        display.refreshDisplay();
+        for (Ship ship : gameState.grids.get(0).getShips()) {
+            if (ship.isSunk()) {
+                ship.displayFromOrigin(MY_GRID_START_X, MY_GRID_START_Y, display, 'X', CELL_WIDTH);
+            } else {
+                ship.displayFromOrigin(MY_GRID_START_X, MY_GRID_START_Y, display, '#', CELL_WIDTH);
+            }
+        }
 
+        for (Tile tile : gameState.grids.get(0).getHitTiles()) {
+            display.setCharacter(MY_GRID_START_X + tile.getX(), MY_GRID_START_Y + tile.getY(), 'X', ANSI.RED);
+        }
+
+        display.refreshDisplay();
     }
     
     public GameState update(GameState gameState, InputManager inputManager, Duration deltaTime){

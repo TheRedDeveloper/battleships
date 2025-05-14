@@ -7,6 +7,13 @@ public class Tile {
         this.position = position;
     }
 
+    public int getX() {
+        return position.x;
+    }
+    public int getY() {
+        return position.y;
+    }
+
     public boolean isOccupied() {
         return data.containedShip != null;
     }
