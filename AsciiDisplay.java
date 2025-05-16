@@ -1,6 +1,5 @@
 import java.awt.*;
 import java.awt.event.*;
-import java.util.logging.Level;
 import javax.swing.*;
 
 /** ASCII-based display for rendering game content with color support.
@@ -43,7 +42,7 @@ public class AsciiDisplay {
                     if (!font.getFamily().equals(fontName) && !fontName.equals(Font.MONOSPACED)) {
                         continue; // Try the next font if this one isn't available
                     }
-                    Game.LOGGER.log(Level.INFO, "Using font: " + fontName);
+                    Game.LOGGER.info("Using font: " + fontName);
                     break;
                 } catch (Exception e) {
                     // Continue to next font if this one fails
@@ -54,7 +53,7 @@ public class AsciiDisplay {
             // If all preferred fonts failed, fall back to default monospaced
             if (font == null) {
                 font = new Font(Font.MONOSPACED, Font.PLAIN, 16);
-                Game.LOGGER.log(Level.INFO, "Using default monospaced font");
+                Game.LOGGER.info("Using default monospaced font");
             }
             
             setBackground(Color.BLACK);
@@ -117,7 +116,7 @@ public class AsciiDisplay {
                 frame.addWindowListener(new WindowAdapter() {
                     @Override
                     public void windowClosing(WindowEvent e) {
-                        Game.LOGGER.log(Level.INFO, "Window closing event received");
+                        Game.LOGGER.info("Window closing event received");
                         Game.stop();
                         frame.dispose();
                         System.exit(0);
@@ -131,7 +130,7 @@ public class AsciiDisplay {
                 Action escapeAction = new AbstractAction() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-                        Game.LOGGER.log(Level.INFO, "ESC key pressed, closing window...");
+                        Game.LOGGER.info("ESC key pressed, closing window...");
                         Game.stop();
                         frame.dispose();
                         System.exit(0);
@@ -148,26 +147,26 @@ public class AsciiDisplay {
                 frame.setLocationRelativeTo(null);
                 frame.setResizable(false);
                 
-                Game.LOGGER.log(Level.INFO, "AsciiDisplay frame initialized");
+                Game.LOGGER.info("AsciiDisplay frame initialized");
             });
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            Game.LOGGER.log(Level.SEVERE, "Thread interrupted while initializing AsciiDisplay: " + e.getMessage());
+            Game.LOGGER.severe("Thread interrupted while initializing AsciiDisplay: " + e.getMessage());
         } catch (java.lang.reflect.InvocationTargetException e) {
-            Game.LOGGER.log(Level.SEVERE, "Error initializing AsciiDisplay: " + e.getMessage());
+            Game.LOGGER.severe("Error initializing AsciiDisplay: " + e.getMessage());
         }
     }
     
     public void show() {
-        Game.LOGGER.log(Level.INFO, "Showing AsciiDisplay...");
+        Game.LOGGER.info("Showing AsciiDisplay...");
         SwingUtilities.invokeLater(() -> {
             if (frame != null) {
                 frame.setVisible(true);
                 panel.requestFocusInWindow();
-                Game.LOGGER.log(Level.INFO, "Frame should now be visible");
+                Game.LOGGER.info("Frame should now be visible");
                 refreshDisplay();
             } else {
-                Game.LOGGER.log(Level.SEVERE, "Cannot show display - frame is null");
+                Game.LOGGER.severe("Cannot show display - frame is null");
             }
         });
     }
@@ -222,6 +221,38 @@ public class AsciiDisplay {
             colorBuffer[y][x] = textColor;
             backgroundBuffer[y][x] = backgroundColor;
         }
+    }
+
+    /**
+     * Sets only the text color at the specified position without changing the character or background color.
+     */
+    public void setColor(int x, int y, Color textColor) {
+        if (x >= 0 && x < GRID_WIDTH && y >= 0 && y < GRID_HEIGHT) {
+            colorBuffer[y][x] = textColor;
+        }
+    }
+    
+    /**
+     * Sets only the text color at the specified position using an ANSI color code.
+     */
+    public void setColor(int x, int y, String ansiColor) {
+        setColor(x, y, translateAnsiColor(ansiColor));
+    }
+    
+    /**
+     * Sets only the background color at the specified position without changing the character or text color.
+     */
+    public void setBackgroundColor(int x, int y, Color backgroundColor) {
+        if (x >= 0 && x < GRID_WIDTH && y >= 0 && y < GRID_HEIGHT) {
+            backgroundBuffer[y][x] = backgroundColor;
+        }
+    }
+    
+    /**
+     * Sets only the background color at the specified position using an ANSI color code.
+     */
+    public void setBackgroundColor(int x, int y, String ansiBackgroundColor) {
+        setBackgroundColor(x, y, translateAnsiBackgroundColor(ansiBackgroundColor));
     }
     
     public void drawString(int x, int y, String text) {
@@ -305,7 +336,7 @@ public class AsciiDisplay {
     
     public void refreshDisplay() {
         if (panel == null) {
-            Game.LOGGER.log(Level.SEVERE, "Cannot refresh - display panel is null");
+            Game.LOGGER.severe("Cannot refresh - display panel is null");
             return;
         }
 
@@ -332,8 +363,7 @@ public class AsciiDisplay {
     public void setCharacter(int x, int y, char c, String foregroundColor, String backgroundColor) {
         setCharacter(x, y, c, translateAnsiColor(foregroundColor), translateAnsiColor(backgroundColor));
     }
-    
-    private Color translateAnsiColor(String ansiCode) {
+      private Color translateAnsiColor(String ansiCode) {
         return switch (ansiCode) {
             case ANSI.BLACK -> Color.BLACK;
             case ANSI.RED -> Color.RED;
@@ -352,6 +382,36 @@ public class AsciiDisplay {
             case ANSI.BRIGHT_CYAN -> new Color(100, 255, 255);
             case ANSI.BRIGHT_WHITE -> Color.WHITE;
             default -> Color.WHITE;
+        };
+    }
+    
+    /**
+     * Translates ANSI background color codes to Java Color objects.
+     * This function is specifically for background colors and handles
+     * standard background color codes like RED_BACKGROUND.
+     * 
+     * @param ansiBackgroundCode The ANSI background color code
+     * @return The corresponding Java Color object
+     */
+    private Color translateAnsiBackgroundColor(String ansiBackgroundCode) {
+        return switch (ansiBackgroundCode) {
+            case ANSI.BLACK_BACKGROUND -> Color.BLACK;
+            case ANSI.RED_BACKGROUND -> Color.RED;
+            case ANSI.GREEN_BACKGROUND -> Color.GREEN;
+            case ANSI.YELLOW_BACKGROUND -> Color.YELLOW;
+            case ANSI.BLUE_BACKGROUND -> Color.BLUE;
+            case ANSI.MAGENTA_BACKGROUND -> Color.MAGENTA;
+            case ANSI.CYAN_BACKGROUND -> Color.CYAN;
+            case ANSI.WHITE_BACKGROUND -> Color.WHITE;
+            case ANSI.BRIGHT_BLACK_BACKGROUND -> Color.DARK_GRAY;
+            case ANSI.BRIGHT_RED_BACKGROUND -> new Color(255, 100, 100);
+            case ANSI.BRIGHT_GREEN_BACKGROUND -> new Color(100, 255, 100);
+            case ANSI.BRIGHT_YELLOW_BACKGROUND -> new Color(255, 255, 100);
+            case ANSI.BRIGHT_BLUE_BACKGROUND -> new Color(100, 100, 255);
+            case ANSI.BRIGHT_MAGENTA_BACKGROUND -> new Color(255, 100, 255);
+            case ANSI.BRIGHT_CYAN_BACKGROUND -> new Color(100, 255, 255);
+            case ANSI.BRIGHT_WHITE_BACKGROUND -> Color.WHITE;
+            default -> Color.BLACK; // Default background color is BLACK
         };
     }
 

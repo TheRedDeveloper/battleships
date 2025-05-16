@@ -2,7 +2,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /** The main class */
@@ -36,31 +35,31 @@ public class Game {
             LOGGER.setUseParentHandlers(false);
             LOGGER.addHandler(handler);
         } catch (SecurityException se) {
-            LOGGER.log(Level.SEVERE, "Security exception during logger setup: {0}", se.getMessage());
+            LOGGER.severe("Security exception during logger setup: " + se.getMessage());
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Failed to configure custom logging: {0}", e.getMessage());
+            LOGGER.severe("Failed to configure custom logging: " + e.getMessage());
         }
     }
 
     public static void play() {
         try {
-            LOGGER.log(Level.INFO, "Starting game...");
+            LOGGER.info("Starting game...");
             isRunning = true;
             startTime = Instant.now();
             
-            LOGGER.log(Level.INFO, "Initializing display...");
+            LOGGER.info("Initializing display...");
             inputManager = new InputManager();
             display = new AsciiDisplay(inputManager);
             
-            LOGGER.log(Level.INFO, "Showing display window...");
+            LOGGER.info("Showing display window...");
             display.show();
             
-            LOGGER.log(Level.INFO, "Waiting for UI initialization...");
+            LOGGER.info("Waiting for UI initialization...");
             Thread.sleep(1000);
             
             StartMenuMode.getInstance().enter(state);
             
-            LOGGER.log(Level.INFO, "Entering game loop...");
+            LOGGER.info("Entering game loop...");
             Instant lastTime = Instant.now();
             while (isRunning) {
                 state.getMode().render(state, display);
@@ -70,23 +69,23 @@ public class Game {
                 Thread.sleep(50);
             }
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error in game loop: " + e.getMessage());
+            LOGGER.severe("Error in game loop: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
     public static void stop() {
-        Game.LOGGER.log(Level.INFO, "Stopping game...");
+        Game.LOGGER.info("Stopping game...");
         isRunning = false;
     }
     
     public static void main(String[] args) {
-        Game.LOGGER.log(Level.INFO, "Game main method called");
+        Game.LOGGER.info("Game main method called");
         
         try {
             javax.swing.UIManager.setLookAndFeel(javax.swing.UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Failed to set look and feel: " + e.getMessage());
+            LOGGER.severe("Failed to set look and feel: " + e.getMessage());
         }
         
         Game.play();

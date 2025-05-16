@@ -2,7 +2,6 @@ import java.awt.Component;
 import java.awt.event.*;
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.logging.Level;
 
 /** Handles keyboard and mouse input for the game interface. 
  * 
@@ -33,7 +32,7 @@ public class InputManager {
 
     /** Initialize input handlers for any component */
     public void initialize(Component component, int gridWidth, int gridHeight) {
-        Game.LOGGER.log(Level.INFO, "Initializing InputManager with " + component.getClass().getSimpleName());
+        Game.LOGGER.info("Initializing InputManager with " + component.getClass().getSimpleName());
         
         // Add key listener to capture keyboard input
         component.addKeyListener(new KeyAdapter() {
@@ -43,7 +42,7 @@ public class InputManager {
                     keyEvents.add(e);
                     // Only log important keys like ESC, not every keystroke
                     if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-                        Game.LOGGER.log(Level.INFO, "Key pressed: " + KeyEvent.getKeyText(e.getKeyCode()));
+                        Game.LOGGER.info("Key pressed: " + KeyEvent.getKeyText(e.getKeyCode()));
                     }
                 }
             }
@@ -168,8 +167,8 @@ public class InputManager {
         Game.calibrateDisplay((int) (rawX / 49.5), (int) (rawY / 23.5));
         
         // Log the calibration factors for debugging
-        Game.LOGGER.log(Level.INFO, "Calibration input: rawX = " + rawX + ", rawY = " + rawY);
-        Game.LOGGER.log(Level.INFO, "Calibration factors set: X = " + calibrationFactorX + ", Y = " + calibrationFactorY);
+        Game.LOGGER.info("Calibration input: rawX = " + rawX + ", rawY = " + rawY);
+        Game.LOGGER.info("Calibration factors set: X = " + calibrationFactorX + ", Y = " + calibrationFactorY);
         
     }
 }

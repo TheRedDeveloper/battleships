@@ -8,7 +8,7 @@ public class Grid {
     public TileData[][] tiles;
     private Map<UUID, Ship> ships;
     private String name;
-
+    
     public Grid(String name) {
         this.name = name;
         tiles = new TileData[10][10];
@@ -20,17 +20,33 @@ public class Grid {
         ships = new HashMap<>(); // I hate Java, I DON'T NEED HASHING BUT I HAVE TO USE IT
     }
 
+    
     public Tile getTile(int x, int y) {
+        if (x < 0 || x >= tiles.length || y < 0 || y >= tiles[0].length) { throw new IllegalArgumentException("Tile coordinates out of bounds: (" + x + ", " + y + ")"); }
         return new Tile(tiles[x][y], new Position(x, y));
     }
-
+    
     public void setTile(int x, int y, TileData tileData) {
         tiles[x][y] = tileData;
     }
-
+    
+    public void hitTile(int x, int y) {
+        if (x < 0 || x >= tiles.length || y < 0 || y >= tiles[x].length) { throw new IllegalArgumentException("Invalid tile coordinates: (" + x + ", " + y + ")"); }
+        if (tiles[x][y].isShot) { throw new IllegalStateException("Tile at (" + x + ", " + y + ") has already been hit."); }
+        tiles[x][y].isShot = true;
+        
+        UUID shipId = tiles[x][y].containedShip;
+        if (shipId != null) {
+            Ship ship = ships.get(shipId);
+            if (ship.getOccupiedPositions().stream().allMatch(pos -> tiles[pos.x][pos.y].isShot)) {
+                ship.setSunk(true);
+            }
+        }
+    }
+    
     public String getName() { return name; }
     public Collection<Ship> getShips() { return ships.values(); }
-
+    
     public void updateShip(UUID id, Ship ship) { 
         if (!ships.containsKey(id)) { throw new IllegalArgumentException("Can't update Ship: Ship with ID " + id + " does not exist."); }
         if (id != ship.getId()) { throw new IllegalArgumentException("Can't update Ship: ID " + id + " does not match ship ID to update " + ship.getId()); }
@@ -41,30 +57,31 @@ public class Grid {
         if (ships.get(id) == ship) { return; }
         ships.put(id, ship);
     }
-
+    
     public void addShip(Ship ship) {
         if (ships.containsKey(ship.getId())) { throw new IllegalArgumentException("Can't add Ship: Ship with ID " + ship.getId() + " already exists."); }
         addOccupation(ship);
         ships.put(ship.getId(), ship);
     }
-
+    
     public void removeShip(UUID id) {
         if (!ships.containsKey(id)) { throw new IllegalArgumentException("Can't remove Ship: Ship with ID " + id + " does not exist."); }
         removeOccupation(ships.get(id));
         ships.remove(id);
     }
-
+    
     public Ship getShip(UUID id) {
         if (!ships.containsKey(id)) { throw new IllegalArgumentException("Can't get Ship: Ship with ID " + id + " does not exist."); }
         return ships.get(id);
     }
-
+    
     public Ship getShipAt(int x, int y) {
         UUID id = tiles[x][y].containedShip;
         if (id == null) { return null; }
         return getShip(id);
     }
 
+    
     private void removeOccupation(Ship ship) {
         for (Position pos : ship.getOccupiedPositions()) {
             if (tiles[pos.x][pos.y].containedShip == null) {
@@ -75,7 +92,7 @@ public class Grid {
             tiles[pos.x][pos.y].containedShip = null;
         }
     }
-
+    
     private void addOccupation(Ship ship) {
         for (Position pos : ship.getOccupiedPositions()) {
             if (tiles[pos.x][pos.y].containedShip != null) {
@@ -86,7 +103,11 @@ public class Grid {
             tiles[pos.x][pos.y].containedShip = ship.getId();
         }
     }
-
+    
+    public boolean isLost() {
+        return ships.values().stream().allMatch(Ship::isSunk);
+    }
+    
     public Collection<Tile> getHitTiles() {
         Collection<Tile> hitTiles = new ArrayList<>();
         for (int x = 0; x < tiles.length; x++) {

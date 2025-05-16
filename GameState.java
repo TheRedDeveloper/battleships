@@ -1,6 +1,5 @@
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
 
 /** The global state of the game, persistent between modes. */
 public class GameState {
@@ -16,7 +15,7 @@ public class GameState {
     }
 
     public void setMode(GameMode mode) {
-        Game.LOGGER.log(Level.INFO, "Switching game mode from " + this.mode.getClass().getSimpleName() + " to " + mode.getClass().getSimpleName());
+        Game.LOGGER.info("Switching game mode from " + this.mode.getClass().getSimpleName() + " to " + mode.getClass().getSimpleName());
         setSelf(this.mode.exit(this));
         this.mode = mode;
         setSelf(mode.enter(this));
@@ -36,7 +35,7 @@ public class GameState {
     }
 
     public void setBotStrategy(BotStrategy botStrategy) {
-        Game.LOGGER.log(Level.INFO, "Bot strategy set to " + botStrategy.getClass().getSimpleName());
+        Game.LOGGER.info("Bot strategy set to " + botStrategy.getClass().getSimpleName());
         this.botStrategy = botStrategy;
     }
 

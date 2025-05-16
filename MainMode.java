@@ -1,11 +1,8 @@
-import java.awt.event.KeyEvent;
 import java.time.Duration;
 
-/**
- * Attack mode of the game where the player can attack the opponent's ships.
- * Handles rendering the attack grid, processing player input for attacks,
- * and updating the game state based on hit/miss results.
- */
+/** Attack mode of the game where the player can attack the opponent's ships.
+ *  Handles rendering the attack grid, processing player input for attacks,
+ *  and updating the game state based on hit/miss results. */
 public class MainMode extends GameMode {
     private static MainMode instance = null;
     public static MainMode getInstance() {
@@ -24,8 +21,10 @@ public class MainMode extends GameMode {
 
     private Position previewPosition;
 
+    @Override
     public GameState enter(GameState gameState){ return gameState; }
-    
+
+    @Override
     public void render(GameState gameState, AsciiDisplay display){
         display.clearBuffer();
 
@@ -43,20 +42,18 @@ public class MainMode extends GameMode {
         }
 
         for (Ship ship : myGrid.getShips()) {
-            if (ship.isSunk()) {
-                ship.displayFromOrigin(MY_GRID_START_X, MY_GRID_START_Y, display, 'X', CELL_WIDTH);
-            } else {
-                ship.displayFromOrigin(MY_GRID_START_X, MY_GRID_START_Y, display, '#', CELL_WIDTH);
-            }
+            ship.displayFromOrigin(MY_GRID_START_X, MY_GRID_START_Y, display, '#', CELL_WIDTH);
         }
 
         for (Tile tile : myGrid.getHitTiles()) {
             if (tile.isOccupied()) {
                 if (!myGrid.getShip(tile.data.containedShip).isSunk()) {
-                    display.setCharacter(MY_GRID_START_X + tile.getX(), MY_GRID_START_Y + tile.getY(), 'X', ANSI.YELLOW);
+                    display.drawString(MY_GRID_START_X + tile.getX() * CELL_WIDTH, MY_GRID_START_Y + tile.getY(), "XX", ANSI.YELLOW);
+                } else {
+                    display.drawString(MY_GRID_START_X + tile.getX() * CELL_WIDTH, MY_GRID_START_Y + tile.getY(), "XX", ANSI.BRIGHT_BLACK);
                 }
             } else {
-                display.setCharacter(MY_GRID_START_X + tile.getX(), MY_GRID_START_Y + tile.getY(), '0', ANSI.RED);
+                display.drawString(MY_GRID_START_X + tile.getX() * CELL_WIDTH, MY_GRID_START_Y + tile.getY(), "xx", ANSI.GREEN);
             }
         }
 
@@ -72,11 +69,13 @@ public class MainMode extends GameMode {
 
         for (Tile tile : opponentGrid.getHitTiles()) {
             if (tile.isOccupied()) {
-                if (!opponentGrid.getShip(tile.data.containedShip).isSunk()) {
-                    display.setCharacter(OPPONENT_GRID_START_X + tile.getX(), OPPONENT_GRID_START_Y + tile.getY(), 'X', ANSI.YELLOW);
-                }
+            if (!opponentGrid.getShip(tile.data.containedShip).isSunk()) {
+                display.drawString(OPPONENT_GRID_START_X + tile.getX() * CELL_WIDTH, OPPONENT_GRID_START_Y + tile.getY(), "XX", ANSI.YELLOW);
             } else {
-                display.setCharacter(OPPONENT_GRID_START_X + tile.getX(), OPPONENT_GRID_START_Y + tile.getY(), '0', ANSI.RED);
+                display.drawString(OPPONENT_GRID_START_X + tile.getX() * CELL_WIDTH, OPPONENT_GRID_START_Y + tile.getY(), "XX", ANSI.RED);
+            }
+            } else {
+            display.drawString(OPPONENT_GRID_START_X + tile.getX() * CELL_WIDTH, OPPONENT_GRID_START_Y + tile.getY(), "xx", ANSI.GREEN);
             }
         }
         
@@ -87,9 +86,10 @@ public class MainMode extends GameMode {
         display.refreshDisplay();
     }
     
+    @Override
     public GameState update(GameState gameState, InputManager inputManager, Duration deltaTime){
         while (inputManager.hasKeyEvents()) {
-            KeyEvent event = inputManager.pollKeyEvent();
+            inputManager.pollKeyEvent(); // Just consume events for now
         }
 
         Position mousePos = inputManager.getMousePosition();
@@ -102,15 +102,28 @@ public class MainMode extends GameMode {
         if (isMouseInGrid) {
             int gridMouseX = (mousePos.x - OPPONENT_GRID_START_X) / CELL_WIDTH;
             int gridMouseY = mousePos.y - OPPONENT_GRID_START_Y;
-            previewPosition = new Position(gridMouseX, gridMouseY);
-            if (isMouseClicked) {
-                // LOGIC HERE
-            }
+            Grid opponentGrid = gameState.grids.get(1);
+            Grid myGrid = gameState.grids.get(0);
+            if (!opponentGrid.getTile(gridMouseX, gridMouseY).data.isShot) {
+                previewPosition = new Position(gridMouseX, gridMouseY);
+                if (isMouseClicked) {
+                    opponentGrid.hitTile(gridMouseX, gridMouseY);
+                    if (opponentGrid.isLost()) {
+                        Game.LOGGER.info("You won!");
+                    }
+                    Position attackPosition = gameState.getBotStrategy().generateAttackPosition(myGrid);
+                    myGrid.hitTile(attackPosition.x, attackPosition.y);
+                    if (myGrid.isLost()) {
+                        Game.LOGGER.info("You lost!");
+                    }
+                }
+            } else previewPosition = null;
         } else {
             previewPosition = null;
         }
         return gameState;
     }
     
+    @Override
     public GameState exit(GameState gameState) { return gameState; }
 }

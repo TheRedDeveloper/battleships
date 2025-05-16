@@ -1,3 +1,6 @@
+---
+applyTo: "**/*.java"
+---
 # Battleships Game Code Standards and Documentation
 
 You should include this, when writing prod code with AI.
@@ -33,6 +36,10 @@ This guide itself is AI-generated, but the standards are mine.
 - Constants and enums use SCREAMING_SNAKE_CASE (not demonstrated in code)
 - Avoid abbreviations unless universally understood
 - Prefer meaningful variable names over cryptic short ones
+
+### Display and UI Standards
+- Use ANSI color constants from the `ANSI` class instead of direct color codes
+- This ensures compatibility with terminal environments and keeps the UI consistent
 
 ### Coordinate System
 - Always use `x` and `y` as variable names for coordinates, never `coordinates[0]` or array notation

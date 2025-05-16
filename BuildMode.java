@@ -2,7 +2,6 @@ import java.awt.event.KeyEvent;
 import java.time.Duration;
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.logging.Level;
 
 public class BuildMode extends GameMode {
     private static BuildMode instance = null;
@@ -139,7 +138,7 @@ public class BuildMode extends GameMode {
 
             if (!mousePos.equals(oldPos)) {
                 oldPos = mousePos;
-                // Game.LOGGER.log(Level.INFO, mousePos.toString() + ": " + mouseGridX + ", " + mouseGridY);
+                // Game.LOGGER.info(mousePos.toString() + ": " + mouseGridX + ", " + mouseGridY);
             }
 
             if (isMouseClicked) {
@@ -154,18 +153,22 @@ public class BuildMode extends GameMode {
                         isPickUpSelected = false;
                     }
                 } else if (selectedShipType != null) {
-
                     int shipX = (int)Math.round(mouseGridXUnrounded - Ship.boxByType.get(selectedShipType).inDirection(selectedDirection).getWidth()/2d);
                     int shipY = (int)Math.round(mouseGridYUnrounded - Ship.boxByType.get(selectedShipType).inDirection(selectedDirection).getHeight()/2d);
-                    Ship ship = new Ship(selectedShipType, shipX, shipY, selectedDirection);
-                    if (ship.getShipBox().getHeight() + shipY <= GRID_SIZE &&
-                        ship.getShipBox().getWidth() + shipX <= GRID_SIZE &&
-                        !ship.isUsingOccupiedTiles(grid)) {
-                        
-                        Game.LOGGER.log(Level.INFO, "Adding ship: " + selectedShipType + " at " + mouseGridX + ", " + mouseGridY);
-                        grid.addShip(ship);
-                        shipTypeCounts.put(selectedShipType, shipTypeCounts.get(selectedShipType) - 1);
-                        selectedShipType = null;
+                    
+                    ShipBox shipBox = Ship.boxByType.get(selectedShipType).inDirection(selectedDirection);
+                    boolean isCompletelyInGrid = shipX >= 0 && shipY >= 0 && 
+                                                shipBox.getHeight() + shipY <= GRID_SIZE && 
+                                                shipBox.getWidth() + shipX <= GRID_SIZE;
+                    
+                    if (isCompletelyInGrid) {
+                        Ship ship = new Ship(selectedShipType, shipX, shipY, selectedDirection);
+                        if (!ship.isUsingOccupiedTiles(grid)) {
+                            Game.LOGGER.info("Adding ship: " + selectedShipType + " at " + mouseGridX + ", " + mouseGridY);
+                            grid.addShip(ship);
+                            shipTypeCounts.put(selectedShipType, shipTypeCounts.get(selectedShipType) - 1);
+                            selectedShipType = null;
+                        }
                     }
                 }
             }
@@ -173,7 +176,7 @@ public class BuildMode extends GameMode {
             previewLocation = null;
             if (!mousePos.equals(oldPos)) {
                 oldPos = mousePos;
-                // Game.LOGGER.log(Level.INFO, mousePos.toString());
+                // Game.LOGGER.info(mousePos.toString());
             }
 
             if (mousePos.y == pickUpShipRow && isMouseClicked) {
