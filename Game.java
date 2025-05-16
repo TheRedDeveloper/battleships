@@ -1,5 +1,6 @@
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Random;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
 import java.util.logging.Logger;
@@ -8,10 +9,11 @@ import java.util.logging.Logger;
 public class Game {
     private static GameState state = new GameState(
         StartMenuMode.getInstance(),
-        new BotStrategy(new RandomGridStrategy(), new RandomAttackStrategy())
+        new BotStrategy(new RandomGridStrategy(), new CheatAttackStrategy())
     );
     private static boolean isRunning;
     public static final Logger LOGGER = Logger.getLogger(Game.class.getName());
+    public static final Random RANDOM = new Random();
     private static Instant startTime;
     private static AsciiDisplay display;
     private static InputManager inputManager;

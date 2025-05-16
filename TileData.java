@@ -1,11 +1,11 @@
 import java.util.UUID;
 
 public class TileData {
-    public boolean isShot;
+    public boolean isHit;
     public UUID containedShip;
     
     public TileData(boolean isShot, UUID containedShip) {
-        this.isShot = isShot;
+        this.isHit = isShot;
         this.containedShip = containedShip;
     }
 }

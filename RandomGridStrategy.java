@@ -1,6 +1,5 @@
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.Random;
 
 /** Responsible for randomly placing ships on the bot's grid.
  * 
@@ -10,7 +9,6 @@ import java.util.Random;
  * @author Claude */
 public class RandomGridStrategy implements GridStrategy {
     private static final int GRID_SIZE = 10;
-    private static final Random random = new Random();
     
     // Ship type counts matching those in BuildMode
     private static final Map<ShipType, Integer> shipTypeCounts = new EnumMap<>(ShipType.class);
@@ -50,8 +48,8 @@ public class RandomGridStrategy implements GridStrategy {
         while (!placed && attempts < MAX_ATTEMPTS) {
             attempts++;
             
-            int x = random.nextInt(GRID_SIZE);
-            int y = random.nextInt(GRID_SIZE);
+            int x = Game.RANDOM.nextInt(GRID_SIZE);
+            int y = Game.RANDOM.nextInt(GRID_SIZE);
             Direction direction = getRandomDirection();
             
             Ship ship = new Ship(shipType, x, y, direction);
@@ -79,6 +77,6 @@ public class RandomGridStrategy implements GridStrategy {
      * Random orientation makes the grid less predictable. */
     private Direction getRandomDirection() {
         Direction[] directions = Direction.values();
-        return directions[random.nextInt(directions.length)];
+        return directions[Game.RANDOM.nextInt(directions.length)];
     }
 }

@@ -29,16 +29,30 @@ public class Grid {
     public void setTile(int x, int y, TileData tileData) {
         tiles[x][y] = tileData;
     }
+
+    public Collection<Tile> getTiles() {
+        Collection<Tile> tileList = new ArrayList<>();
+        int x = 0;
+        for (TileData[] row : tiles) {
+            int y = 0;
+            for (TileData tile : row) {
+                tileList.add(new Tile(tile, new Position(x, y)));
+                y++;
+            }
+            x++;
+        }
+        return tileList;
+    }
     
     public void hitTile(int x, int y) {
         if (x < 0 || x >= tiles.length || y < 0 || y >= tiles[x].length) { throw new IllegalArgumentException("Invalid tile coordinates: (" + x + ", " + y + ")"); }
-        if (tiles[x][y].isShot) { throw new IllegalStateException("Tile at (" + x + ", " + y + ") has already been hit."); }
-        tiles[x][y].isShot = true;
+        if (tiles[x][y].isHit) { throw new IllegalStateException("Tile at (" + x + ", " + y + ") has already been hit."); }
+        tiles[x][y].isHit = true;
         
         UUID shipId = tiles[x][y].containedShip;
         if (shipId != null) {
             Ship ship = ships.get(shipId);
-            if (ship.getOccupiedPositions().stream().allMatch(pos -> tiles[pos.x][pos.y].isShot)) {
+            if (ship.getOccupiedPositions().stream().allMatch(pos -> tiles[pos.x][pos.y].isHit)) {
                 ship.setSunk(true);
             }
         }
@@ -112,7 +126,7 @@ public class Grid {
         Collection<Tile> hitTiles = new ArrayList<>();
         for (int x = 0; x < tiles.length; x++) {
             for (int y = 0; y < tiles[x].length; y++) {
-                if (tiles[x][y].isShot) {
+                if (tiles[x][y].isHit) {
                     hitTiles.add(new Tile(tiles[x][y], new Position(x, y)));
                 }
             }
@@ -127,7 +141,7 @@ public class Grid {
         
         for (TileData[] row : tiles) {
             for (TileData tile : row) {
-                if (tile.isShot) {
+                if (tile.isHit) {
                     result.append(tile.containedShip != null ? "X" : "O");
                 } else {
                     result.append(tile.containedShip != null ? "S" : ".");

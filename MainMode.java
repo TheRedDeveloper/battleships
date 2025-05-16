@@ -104,7 +104,7 @@ public class MainMode extends GameMode {
             int gridMouseY = mousePos.y - OPPONENT_GRID_START_Y;
             Grid opponentGrid = gameState.grids.get(1);
             Grid myGrid = gameState.grids.get(0);
-            if (!opponentGrid.getTile(gridMouseX, gridMouseY).data.isShot) {
+            if (!opponentGrid.getTile(gridMouseX, gridMouseY).data.isHit) {
                 previewPosition = new Position(gridMouseX, gridMouseY);
                 if (isMouseClicked) {
                     opponentGrid.hitTile(gridMouseX, gridMouseY);

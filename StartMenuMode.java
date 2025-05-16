@@ -1,6 +1,5 @@
 import java.awt.event.KeyEvent;
 import java.time.Duration;
-import java.util.Random;
 
 /** Represents the main menu screen of the Battleships game.
  * 
@@ -65,7 +64,6 @@ public class StartMenuMode extends GameMode {
     // Animation parameters
     private static final int DISPLAY_HEIGHT = AsciiDisplay.getGridHeight();
     private static final int DISPLAY_WIDTH = AsciiDisplay.getGridWidth();
-    private Random random = new Random();
     
     // Star background
     private static class Star {
@@ -216,11 +214,11 @@ public class StartMenuMode extends GameMode {
     private void initializeStars() {
         // Initialize stars with random positions
         for (int i = 0; i < STAR_COUNT; i++) {
-            int x = random.nextInt(DISPLAY_WIDTH);
-            int y = random.nextInt(DISPLAY_HEIGHT);
-            char symbol = STAR_SYMBOLS[random.nextInt(STAR_SYMBOLS.length)];
-            String color = STAR_COLORS[random.nextInt(STAR_COLORS.length)];
-            double twinkleSpeed = 0.5 + random.nextDouble(); // Random speed between 0.5 and 1.5
+            int x = Game.RANDOM.nextInt(DISPLAY_WIDTH);
+            int y = Game.RANDOM.nextInt(DISPLAY_HEIGHT);
+            char symbol = STAR_SYMBOLS[Game.RANDOM.nextInt(STAR_SYMBOLS.length)];
+            String color = STAR_COLORS[Game.RANDOM.nextInt(STAR_COLORS.length)];
+            double twinkleSpeed = 0.5 + Game.RANDOM.nextDouble(); // Random speed between 0.5 and 1.5
             stars[i] = new Star(x, y, symbol, color, twinkleSpeed);
         }
     }
@@ -377,9 +375,9 @@ public class StartMenuMode extends GameMode {
                 display.setCharacter(star.x, star.y, star.symbol, star.color);
             } else {
                 // When star goes dark, randomize its position at 5% chance
-                if (random.nextDouble() <= 0.05) {
-                    star.x = random.nextInt(DISPLAY_WIDTH);
-                    star.y = random.nextInt(DISPLAY_HEIGHT);
+                if (Game.RANDOM.nextDouble() <= 0.05) {
+                    star.x = Game.RANDOM.nextInt(DISPLAY_WIDTH);
+                    star.y = Game.RANDOM.nextInt(DISPLAY_HEIGHT);
                 }
             }
         }
