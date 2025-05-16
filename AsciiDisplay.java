@@ -18,49 +18,36 @@ public class AsciiDisplay {
     private Color[][] backgroundBuffer;
     private JFrame frame;
     private DisplayPanel panel;
-    private InputManager inputManager;
 
     private int calibrationWidth = 9;
     private int calibrationHeight = 19;
     
     /** Panel that renders the character grid with colors */
     private class DisplayPanel extends JPanel {
-        private Font font;
+        private Font asciiFont;
         private int charWidth;
         private int charHeight;
         
         public DisplayPanel() {
             // Try to use Noto Mono with fallbacks to other monospace fonts
             String[] fontNames = {"DejaVu Sans Mono", Font.MONOSPACED};
-            font = null;
+            asciiFont = null;
             
             // Try each font in order of preference
             for (String fontName : fontNames) {
                 try {
-                    font = new Font(fontName, Font.PLAIN, 16);
-                    // Test if this font exists in the system
-                    if (!font.getFamily().equals(fontName) && !fontName.equals(Font.MONOSPACED)) {
-                        continue; // Try the next font if this one isn't available
-                    }
-                    Game.LOGGER.info("Using font: " + fontName);
+                    asciiFont = new Font(fontName, Font.PLAIN, 16);
                     break;
-                } catch (Exception e) {
-                    // Continue to next font if this one fails
-                    continue;
-                }
+                } catch (Exception e) { /* Font failed, continue to next one */ }
             }
             
-            // If all preferred fonts failed, fall back to default monospaced
-            if (font == null) {
-                font = new Font(Font.MONOSPACED, Font.PLAIN, 16);
-                Game.LOGGER.info("Using default monospaced font");
-            }
+            if (asciiFont == null) { throw new RuntimeException("No suitable monospace font found"); }
             
             setBackground(Color.BLACK);
             setForeground(Color.WHITE);
             
             // Estimate character dimensions initially
-            FontMetrics metrics = getFontMetrics(font);
+            FontMetrics metrics = getFontMetrics(asciiFont);
             charWidth = metrics.charWidth('W');
             charHeight = metrics.getHeight();
 
@@ -76,7 +63,7 @@ public class AsciiDisplay {
             // Use better text rendering
             g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, 
                                 RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-            g2d.setFont(font);
+            g2d.setFont(asciiFont);
             
             FontMetrics metrics = g2d.getFontMetrics();
             charWidth = metrics.charWidth('W');
@@ -102,7 +89,6 @@ public class AsciiDisplay {
     }
     
     public AsciiDisplay(InputManager inputManager) {
-        this.inputManager = inputManager;
         displayBuffer = new char[GRID_HEIGHT][GRID_WIDTH];
         colorBuffer = new Color[GRID_HEIGHT][GRID_WIDTH];
         backgroundBuffer = new Color[GRID_HEIGHT][GRID_WIDTH];
@@ -341,9 +327,7 @@ public class AsciiDisplay {
         }
 
         // Repaint the panel to show the updated buffer
-        SwingUtilities.invokeLater(() -> {
-            panel.repaint();
-        });
+        SwingUtilities.invokeLater(() -> panel.repaint());
     }
 
     // Color helper methods to integrate with existing ANSI class

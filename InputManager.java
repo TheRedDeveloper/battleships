@@ -26,10 +26,6 @@ public class InputManager {
     private boolean rightMouseClicked = false;
     private final Object mouseLock = new Object();
     
-    // Character dimensions for coordinate conversion
-    private float charWidth = 0;
-    private float charHeight = 0;
-
     /** Initialize input handlers for any component */
     public void initialize(Component component, int gridWidth, int gridHeight) {
         Game.LOGGER.info("Initializing InputManager with " + component.getClass().getSimpleName());
@@ -104,8 +100,8 @@ public class InputManager {
             mouseY = (int)Math.floor(rawY * calibrationFactorY);
             
             // Ensure coordinates are within bounds
-            mouseX = Math.max(0, Math.min(gridWidth - 1, mouseX));
-            mouseY = Math.max(0, Math.min(gridHeight - 1, mouseY));
+            mouseX = Math.clamp(mouseX, 0, gridWidth - 1);
+            mouseY = Math.clamp(mouseY, 0, gridHeight - 1);
         }
     }
     

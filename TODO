@@ -39,7 +39,12 @@ I hope this works in Java.
 [X] Add a count of availible ships
 [X] Center the ships when placing
 
-[ ] Add main mode
-[ ] Add strategy pattern to populate grid
-[ ] Add strategy pattern to generate moves
-[ ] Add strategy pattern that unites the two
+[X] Add main mode
+[X] Add strategy pattern to populate grid
+[X] Add strategy pattern to generate moves
+[X] Add strategy pattern that unites the two
+
+[ ] Add a win / loose mode
+[ ] Think of some really cool bot strategies and test them
+
+[ ] Add options menu

@@ -19,7 +19,6 @@ public class StartMenuMode extends GameMode {
     };
     
     // Credits screen variables
-    private boolean showingCredits = false;
     private long creditsStartTime = 0;
     private static final long CREDITS_DURATION_MS = 40000;
     
@@ -70,7 +69,8 @@ public class StartMenuMode extends GameMode {
     
     // Star background
     private static class Star {
-        int x, y;
+        int x;
+        int y;
         char symbol;
         String color;
         double twinkleSpeed;
@@ -93,7 +93,8 @@ public class StartMenuMode extends GameMode {
     
     // Ship animation
     private static class AnimatedShip {
-        int x, y;
+        int x;
+        int y;
         double speed;
         String[] art;
         String color;
@@ -163,21 +164,9 @@ public class StartMenuMode extends GameMode {
         
         if (screen == StartMenuScreen.MAIN) {
             switch (keyCode) {
-                case KeyEvent.VK_UP, KeyEvent.VK_K -> {
-                    // Move selection up
-                    selectedOption = Math.max(0, selectedOption - 1);
-                }
-                    
-                case KeyEvent.VK_DOWN, KeyEvent.VK_J -> {
-                    // Move selection down
-                    selectedOption = Math.min(2, selectedOption + 1);
-                }
-                    
-                case KeyEvent.VK_ENTER -> {
-                    // Select current option
-                    handleSelection(gameState);
-                }
-                    
+                case KeyEvent.VK_UP, KeyEvent.VK_K -> selectedOption = Math.max(0, selectedOption - 1);
+                case KeyEvent.VK_DOWN, KeyEvent.VK_J -> selectedOption = Math.min(2, selectedOption + 1);
+                case KeyEvent.VK_ENTER -> handleSelection(gameState);
                 default -> {
                     char keyChar = e.getKeyChar();
                     switch (keyChar) {
@@ -193,6 +182,9 @@ public class StartMenuMode extends GameMode {
                             selectedOption = 2;
                             handleSelection(gameState);
                         }
+                        default -> {
+                            // Ignore other keys
+                        }
                     }
                 }
             }
@@ -204,21 +196,17 @@ public class StartMenuMode extends GameMode {
     
     private void handleSelection(GameState gameState) {
         switch (selectedOption) {
-            case 0 -> {  // Start Game
-                gameState.setMode(BuildMode.getInstance()); // Start with BuildMode to place ships
-            }
+            case 0 -> gameState.setMode(BuildMode.getInstance());
             case 1 -> {  // Credits
                 screen = StartMenuScreen.CREDITS;
                 creditsStartTime = Game.getTimeSinceStart().toMillis();
-                showingCredits = true;
             }
             case 2 -> {  // Calibrate
                 screen = StartMenuScreen.CALIBRATE;
                 Game.resizeDisplay(10000, 10000);
             }
-            case 3 -> {  // Exit
-                Game.stop();
-            }
+            case 3 -> Game.stop();
+            default -> throw new IllegalStateException("Weird option selected: " + selectedOption);
         }
     }
     
@@ -298,7 +286,6 @@ public class StartMenuMode extends GameMode {
         // Auto-return to main menu after credits duration
         if (elapsedTime > CREDITS_DURATION_MS) {
             screen = StartMenuScreen.MAIN;
-            showingCredits = false;
             display.refreshDisplay();
             return;
         }
@@ -352,8 +339,6 @@ public class StartMenuMode extends GameMode {
      * Renders decorative water and ships at the bottom of the main menu
      */
     private void renderWaterDecoration(AsciiDisplay display) {
-        long currentTime = Game.getTimeSinceStart().toMillis();
-        
         // Draw water at the bottom as decoration
         for (int y = 19; y < 24; y++) {
             for (int x = 0; x < 50; x++) {
