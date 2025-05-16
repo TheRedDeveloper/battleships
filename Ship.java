@@ -22,7 +22,7 @@ public class Ship {
             new boolean[][]{{true, true, true, true}}, Direction.RIGHT, ANSI.BRIGHT_RED));
         
         boxMap.put(ShipType.CRUISER3X1, new ShipBox(3, 1, 
-            new boolean[][]{{true, true, true}}, Direction.RIGHT, ANSI.YELLOW));
+            new boolean[][]{{true, true, true}}, Direction.RIGHT, ANSI.BRIGHT_MAGENTA));
         
         boxMap.put(ShipType.DESTROYER2X1, new ShipBox(2, 1, 
             new boolean[][]{{true, true}}, Direction.RIGHT, ANSI.BRIGHT_GREEN));

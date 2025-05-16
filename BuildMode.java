@@ -41,7 +41,7 @@ public class BuildMode extends GameMode {
     }
 
     @Override
-    public void enter() { }
+    public GameState enter(GameState gameState) { return gameState; }
 
     @Override
     public void render(GameState gameState, AsciiDisplay display) {
@@ -111,7 +111,7 @@ public class BuildMode extends GameMode {
                     selectedDirection = selectedDirection.rotated(RotationDirection.COUNTER_CLOCKWISE);
                     break;
                 case KeyEvent.VK_ENTER:
-                    gameState.setMode(AttackMode.getInstance());
+                    gameState.setMode(MainMode.getInstance());
                 default:
                     break;
             }
@@ -192,8 +192,9 @@ public class BuildMode extends GameMode {
         }
     
         return gameState;
+    }    @Override
+    public GameState exit(GameState gameState) {
+        gameState.grids.add(gameState.getBotStrategy().generateGrid());
+        return gameState;
     }
-    
-    @Override
-    public void exit() { }
 }

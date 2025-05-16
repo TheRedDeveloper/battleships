@@ -6,11 +6,11 @@ public abstract class GameMode {
         // Protected constructor for singleton pattern
     }
 
-    public abstract void enter();
+    public abstract GameState enter(GameState gameState);
     
     public abstract void render(GameState gameState, AsciiDisplay display);
     
     public abstract GameState update(GameState gameState, InputManager inputManager, Duration deltaTime);
     
-    public abstract void exit();
+    public abstract GameState exit(GameState gameState);
 }

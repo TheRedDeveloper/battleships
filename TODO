@@ -40,3 +40,6 @@ I hope this works in Java.
 [X] Center the ships when placing
 
 [ ] Add main mode
+[ ] Add strategy pattern to populate grid
+[ ] Add strategy pattern to generate moves
+[ ] Add strategy pattern that unites the two

@@ -123,7 +123,7 @@ public class StartMenuMode extends GameMode {
     }
     
     @Override
-    public void enter() {
+    public GameState enter(GameState gameState) {
         screen = StartMenuScreen.MAIN;
         selectedOption = 0;
         
@@ -132,6 +132,8 @@ public class StartMenuMode extends GameMode {
         
         // Initialize ships for credits screen
         initializeShips();
+
+        return gameState;
     }
 
     @Override
@@ -151,7 +153,7 @@ public class StartMenuMode extends GameMode {
     }
     
     @Override
-    public void exit() {}
+    public GameState exit(GameState gameState) { return gameState; }
     
     /**
      * Process a key event and update the game state accordingly

@@ -7,7 +7,10 @@ import java.util.logging.Logger;
 
 /** The main class */
 public class Game {
-    private static GameState state = new GameState(StartMenuMode.getInstance());
+    private static GameState state = new GameState(
+        StartMenuMode.getInstance(),
+        new BotStrategy(new RandomGridStrategy(), new RandomAttackStrategy())
+    );
     private static boolean isRunning;
     public static final Logger LOGGER = Logger.getLogger(Game.class.getName());
     private static Instant startTime;
@@ -55,7 +58,7 @@ public class Game {
             LOGGER.log(Level.INFO, "Waiting for UI initialization...");
             Thread.sleep(1000);
             
-            StartMenuMode.getInstance().enter();
+            StartMenuMode.getInstance().enter(state);
             
             LOGGER.log(Level.INFO, "Entering game loop...");
             Instant lastTime = Instant.now();
