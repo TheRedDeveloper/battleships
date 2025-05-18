@@ -50,6 +50,377 @@ I hope this works in Java.
     [ ] (Medium) Random-target strategy: Randomly hunt until a hit, then target adjacent cells
     [ ] (Hard) Diagonal-target strategy: Randomly hunt diagonally until a hit, then target adjacent cells, unless only 1x1 remaining
     [ ] (Expert) Fucking complicated probabilistic approach (Need to think about this a lot): MATH!
-    [X] (Impossible) It's literally cheating to always hit 
+        Factorial level depth impossibility due to information (tile occupation) as value
+        THIS IS A Partially Observable Markov Decision Process (POMDP) problem AAAAAAAAA
+        With a POMDP it's really hard to solve. There are various approaches to solve it, but they are all really complicated.
+        There is Monte Carlo Tree Search (MCTS) which is a heuristic search algorithm for making decisions
+        I found this on GitHub
+            POMCP, like other online solvers, is optimized for finding a good action from the current belief, not learning a value function for a general belief.
+            POMDPs.jl would definitely be more suitable than CommonRLInterface for doing this type of thing because it would be better for dealing with beliefs.
+            SARSOP would probably be the most suitable solver, but it will probably not be able to handle a big Battleship board state space.
+            This might be an area for further research - deep alpha-function approximation or something.
+        We might need a Bayesian network with Bayesian inference to solve this problem.
+        All of this is really complicated and cutting edge research.
+        I need to do a bunch of research on this.
+
+        Lets state our mathematical problem
+            There are these ship shapes:
+                1x1, 2x1, 3x1, 4x1, U
+            Each ship shape has 1-4 rotational states:
+                1x1: 1x1
+                2x1: 2x1, 1x2
+                3x1: 3x1, 1x3
+                4x1: 4x1, 1x4
+                U: U, C, inverseU, inverseC
+            Each ship shape has a count:
+                1x1: 1
+                2x1: 1
+                3x1: 2
+                4x1: 1
+                U: 1
+            There is a 10x10 grid of cells.
+            There are these states per cell:
+                "unkown", "miss", "hit" and "sunk+SHIPTYPE"
+
+            How many moves until we know all ships will revealing a cell result in?
+
+            --- Solving the problem ---
+
+            Let x be a cell revealed in the grid.
+                a How many moves until we win the game will x result in (approximately)
+                b How many total future correct hits x will result in (approximately)
+            Let's start by considering: Is b a perfect estimate of a?
+            Yes, because there are a limited number of hits needed to win the game.
+            There are 1+2+3*2+4+5=18 hits needed to win the game. So a = 18/b.
+            We can now approximate b instead of a in our algorithm.
+
+            Our problem is now simplified.
+
+            Lets take an example. This formation is in the middle of the grid
+                XX
+                X
+                X0
+            where X is a ship and 0 is empty. All ships are possible.
+            There are several possible ship placements such as
+                UUU
+                U U
+                1
+            or
+                22
+                1
+             4444
+            Lets now say only a U ship and a 1 ship are possible.
+            Three are only 2 possible solutions
+            1.  UUU
+                U U
+                1
+            2. UU1
+                U 
+               UU
+            Judging by the possible solutions we can see that S is the optimal solution
+                XXS
+                X
+                X0
+            If S is a hit, we know that 1 is true.
+            If S is a sink, we know that 2 is true.
+            S has a 50% chance of being a hit and a 50% chance of being a sink.
+            So x = S is a win in 1 "move". a(S) = 1, because there are 1+5-4=2 hits left, b(S) = 2.
+            
+            How did we get to b(S) = 2?
+
+            We know that there are 1+5-4=2 hits left.
+            Hitting on the S tile will result in the game state (2 tiles) being revealed.
+            So we can say that b(S) = 2.
+
+            We can now propose another stat c(x) where it is the total amount of information.
+            in this case before S c = 2 options = 1b and after S c = 1 options = 0b.
+            So we can say that c(S) = 0b.
+            This isn't really useful for us, but it is a good stat to have.
+
+            Ok all we have been doing is wrong.
+            S is better. But lets consider the moves ABCD
+               AXXSC
+                X  D
+               BX0
+            These moves also solve the game.
+            S is better because it solves the game and has a hit chance of 100%.
+            ABCD have a hit chance of 50% respectively.
+            So we need to consider the hit chance as a secondary stat.
+
+            If we choose A, then there are 2 possible things
+                1. (50%) A is a miss, then we know that 2 is true, the game is won in exactly 3 moves.
+                2. (50%) A is a hit, then we know that 1 is true, the game is won in exactly 2 moves.
+                3. (0%) A can't be a sink
+            On average, a(A) = 2.5! b(A) = 2/2.5 = 0.8! c(A) is completely useless as it is still 1b.
+
+            When we choose S, there are 2 possible things
+                1. (0%) S can't be a miss
+                2. (50%) S is a hit, then we know that 1 is true, the game is won in exactly 2 moves.
+                3. (50%) S is a sink, then we know that 2 is true, the game is won in exactly 2 moves.
+            On average, a(S) = 2! b(S) = 2/2 = 1! c(S) is completely useless as it is still 1b.
+            a(S) is not 1, because we need to do the sinking after knowing the ship positions.
+
+            Calculating a(x) seems now easier to do than b(x). 
+
+            Ok I just realized that all I have been saying is completely wrong.
+            The correct state would look like this
+               AXXS
+                X C
+               BX0
+            And a(S) is the same as a(A) because it also has a 50% chance of being a hit, not 100%.
+            I was just confused and stupid.
+            This also means there are 3 possible options, another with the U-ship reversed.
+            Let's state a simple problem that actually matches what I am saying,
+            where there would be an S which is always a hit and where there are 2 possible options.
+            The 3 possible options problem can be solved by just putting a 0 where the inverse U would be.
+               AXXS
+                X0C
+               BX0
+            S is still a 50% chance of being a hit, hmm.
+            NO THERE IS NO SUCH THING AS A 100% CHANCE OF BEING A HIT.
+            Can we prove that? How?
+
+            Knowing that all ABC and S are 50% hits, we can say they are all equal.
+            Is there a situation where S is not a 50% hit but a 66% hit witch 3 options?
+            Yes, if there are 3 options and 2 of them hit it.
+            Lets remove our 0 and rename them ABCDEF instead of ABCS.
+            Let's also say all the ones where there can be no ship is a 0. (We know it's a miss)
+                AXCE
+                0XDF
+                BX00
+            ABCDEF can be hits (unknown). 0 is always a miss. X is always a hit.
+            Now we have 3 options, here - is empty
+            1.
+                -UUU
+                -U-U
+                -1--
+            2.
+                -U-U
+                -UUU
+                -1--
+            3.
+                UU1-
+                -U--
+                UU--
+            This is a 4 wide, 3 tall grid by the way.
+            Now we can easily see that both C, E and F are optimal on first glance.
+            All of them win in 3 moves on 2/3 cases.
+
+            A is not the best option, because if
+                1. (66%) A is a miss, then we know that 1 or 2 is true, game is won in 4.5 (A,E,F,C(,D)) moves, because
+                    [2] E is a hit, then (always go for known hits)
+                        [3] F is a hit, then (always go for known hits)
+                            [4.5] C is one of the two best options, because if
+                                1. [5] (50%) C is a miss, then we know that 2 is true, the game is won in exactly 2 (C,D) moves.
+                                2. (0%) C cannot be a hit
+                                3. [4] (50%) C is a sink, then we know that 1 is true, the game is won in exactly 1 (C) moves.
+                            a(C) = 1*2/2 + 1*1/2 = 1.5 
+                            [4.5] D is one of the two best options, because if
+                                1. [5] (50%) D is a miss, then we know that 1 is true, the game is won in exactly 2 (D,C) moves.
+                                2. (0%) D cannot be a hit
+                                3. [4] (50%) D is a sink, then we know that 2 is true, the game is won in exactly 1 (D) moves.
+                            a(D) = 1*2/2 + 1*1/2 = 1.5
+                2. (33%) A is a hit, then we know 3 is true, the game is won in exactly 3 (A,B,C) moves.
+                    [2] B is a hit, then (always go for known hits)
+                        [3] C is a hit (always go for known hits)
+                3. (0%) A cannot be a sink (in no belief state)
+            a(A) = 2*4.5/3 + 1*3/3 = 4.0
+
+            B is not the best option, because if
+                1. (66%) B is a miss, then we know that 1 or 2 is true, game is won in 4.5 (B,E,F,C(,D)) moves.
+                    [3] E is a hit, then (always go for known hits)
+                        [4] F is a hit, then (always go for known hits)
+                            [4.5] C is one of the two best options, because if
+                                1. [5] (50%) C is a miss, then we know that 2 is true, the game is won in exactly 2 (C,D) moves.
+                                2. (0%) C cannot be a hit
+                                3. [4] (50%) C is a sink, then we know that 1 is true, the game is won in exactly 1 (C) moves.
+                            a(C) = 1*2/2 + 1*1/2 = 1.5
+                            [4.5] D is one of the two best options, because if
+                                1. [5] (50%) D is a miss, then we know that 1 is true, the game is won in exactly 2 (D,C) moves.
+                                2. (0%) D cannot be a hit
+                                3. [4] (50%) D is a sink, then we know that 2 is true, the game is won in exactly 1 (D) moves.
+                            a(D) = 1*2/2 + 1*1/2 = 1.5
+                2. (33%) B is a hit, then we know 3 is true, the game is won in exactly 3 (B,A,C) moves.
+                    [3] A is a hit (always go for known hits)
+                        [4] C is a hit (always go for known hits)
+                3. (0%) B cannot be a sink (in no belief state)
+            a(B) = 2*4.5/3 + 1*3/3 = 4.0
+
+            C is clearly the best option, because if
+                1. (33%) C is a miss, then we know that 2 is true, the game is won in exactly 4 (C,D,F,E) moves.
+                    [2] D is a hit, then (always go for known hits)
+                        [3] E is a hit, then (always go for known hits)
+                            [4] F is a hit (always go for known hits)
+                2. (33%) C is a hit, then we know that 1 is true, the game is won in exactly 3 (C,E,F) moves.
+                    [2] E is a hit, then (always go for known hits)
+                        [3] F is a hit (always go for known hits)
+                3. (33%) C is a sink, then we know that 3 is true, the game is won in exactly 3 (C,A,B) moves.
+                    [2] A is a hit, then (always go for known hits)
+                        [3] B is a hit (always go for known hits)
+            a(C) = 3.33
+
+            D is not the best option, because if
+                1. (66%) D is a miss, then we know that 1 or 3 is true, game is won in 4 (D,C,(A,B / E,F)) moves.
+                2. (33%) D is a hit, then we know 2 is true, the game is won in exactly 3 (D,E,F) moves.
+                3. (0%) D cannot be a sink
+            a(D) = 2*4/3 + 1*3/3 = 3.6
+            
+            E is not the best option, because if
+                1. (33%) E is a miss, then we know that 3 is true, the game is won in exactly 4 (E,A,B,C) moves.
+                2. (66%) E is a hit, then we know that 1 or 2 is true, game is won in 3.5 (E,F,C(,D)) moves.
+                3. (0%) E cannot be a sink
+            a(E) = 2*4/3 + 1*3.5/3 = 3.83
+
+            F is not the best option, because if
+                1. (33%) F is a miss, then we know that 3 is true, the game is won in exactly 4 (F,A,B,C) moves.
+                2. (66%) F is a hit, then we know that 1 or 2 is true, game is won in 3.5 (F,E,C(,D)) moves.
+                3. (0%) F cannot be a sink
+            a(F) = 2*4/3 + 1*3.5/3 = 3.83
+
+            WE HAVE DONE IT! I HAVE PROVEN THAT C IS PERFECTLY OPTIMAL!
+            I AM A GENIUS! NOW HOW DO I GENERALIZE THIS?
+
+
+            FUCK I JUST REALIZED THAT ALL OF THIS IS COMPLETELY INCORRECT
+            IF WE HAVE A 1 SHIP THAT WE KNOW IS HIT WE SHOULD KNOW ITS SUNK.
+            THIS COMPLETELY INVALIDATES BELIEF STATE 1 AND 2.
+            IN THESE STATES BOTTOM X WOULD BE SUNK AND NOT HIT.
+            OUR GENERALIZED SOLUTION SHOULD STILL BE VALID.
+
+            Here is some pseudocode for a(x).
+            Def calculateMovesToWin(variableCells, beliefstates)
+                If (len(beliefstates) == 1 && is won)
+                    return 0
+                // Always eliminate known hits/sunks first
+                For variable cell in variableCells
+                    If (cell is hit or sunk in all beliefs)
+                        return 1 + calculateMovesToWin(variableCells-cell, beliefstatesWithHitOrSunk(beliefstates, cell))
+                return lowest(For each variable cell
+                    return average(For each beliefstate
+                        If (cell is miss)
+                            return 1 + calculateMovesToWin(variableCells-cell, beliefstatesWithMiss(beliefstates, cell))
+                        If (cell is hit in belief)
+                            return 1 + calculateMovesToWin(variableCells-cell, beliefstatesWithHit(beliefstates, cell))
+                        If (cell is sunk in belief)
+                            return 1 + calculateMovesToWin(variableCells-cell, beliefstatesWithSunk(beliefstates, cell))
+                    ))
+            Def optimalMove(variableCells, beliefstates)
+                // Always eliminate known hits/sunks first
+                For variable cell in variableCells
+                    If (cell is hit or sunk in all beliefs)
+                        return cell
+                return cellWithLowestValue(For each cell in variable cell
+                    return average(
+                        calculateMovesToWin(variableCells-cell, beliefstatesWithHit(beliefstates, cell)) * len(beliefstatesWithHit(beliefstates, cell)),
+                        calculateMovesToWin(variableCells-cell, beliefstatesWithSunk(beliefstates, cell)) * len(beliefstatesWithSunk(beliefstates, cell)),
+                        calculateMovesToWin(variableCells-cell, beliefstatesWithMiss(beliefstates, cell)) * len(beliefstatesWithMiss(beliefstates, cell))
+                    ), cell
+                )
+
+            There are two ships, a U and a 2x1.
+            This is our knowledge
+                AXXC
+                0X0D
+                BXE0
+            There are 3 belief states
+                1.
+                -UUU
+                -U-U
+                -22-
+                2.
+                -UUU
+                -U-U
+                22--
+                3.
+                UU22
+                -U--
+                UU--
+            
+            Lets get calculating
+            
+            A is not the best option because, if
+                1. (66%) miss, 1 or 2: 4.5 moves to win (A,C,D,B(,E)), because
+                    [2] C is hit
+                        [3] D is sunk
+                            [4.5] B
+                                1. (50%) B is a miss, then we know that 1 is true, the game is won in exactly 2 (B,E) moves.
+                                2. (0%) B cannot be a hit
+                                3. (50%) B is a sink, then we know that 2 is true, the game is won in exactly 1 (B) moves.
+                            a(B) = 1*2/2 + 1*1/2 = 1.5
+                            [4.5] E
+                                1. (50%) E is a miss, then we know that 2 is true, the game is won in exactly 2 (E,B) moves.
+                                2. (0%) E cannot be a hit
+                                3. (50%) E is a sink, then we know that 1 is true, the game is won in exactly 1 (E) moves.
+                            a(E) = 1*2/2 + 1*1/2 = 1.5
+                2. (33%) hit, 3: 3 moves to win (A,B,C)
+                3. (0%) sink
+            a(A) = 2*4.5/3 + 1*3/3 = 4.0
+
+            B is also the best option because, if
+                1. (33%) miss, 1: 4 moves to win (B,C,D,E)
+                2. (33%) hit, 3: 3 moves to win (B,A,C)
+                3. (33%) sink, 2: 3 moves to win (B,C,D)
+            a(B) = 4/3 + 2*3/3 = 3.33
+
+            C STOP WAIT C IS HIT IN ALL BELIEFS WE NEED TO HIT IT
+            Let's say it wasnt tho.
+            C is also the best option because, if
+                1. (0%) miss
+                2. (66%) hit, 1 or 2: 3.5 moves to win (C,D,B(,E))
+                    [2] D is hit
+                        [3.5] E
+                            1. (50%) E is a miss, then we know that 2 is true, the game is won in exactly 2 (E,B) moves.
+                            2. (0%) E cannot be a hit
+                            3. (50%) E is a sink, then we know that 1 is true, the game is won in exactly 1 (E) moves.
+                        a(E) = 1*2/2 + 1*1/2 = 1.5
+                        [3.5] B
+                            1. (50%) B is a miss, then we know that 1 is true, the game is won in exactly 2 (B,E) moves.
+                            2. (0%) B cannot be a hit
+                            3. (50%) B is a sink, then we know that 2 is true, the game is won in exactly 1 (B) moves.
+                        a(B) = 1*2/2 + 1*1/2 = 1.5
+                3. (33%) sink, 3: 3 moves to win (C,A,B)
+            a(C) = 2*3.5/3 + 1*3/3 = 3.33
+
+            D is not the best option because, if
+                1. (33%) miss, 3: 4 moves to win (D,C,A,B)
+                2. (66%) hit, 1 or 2: 3.5 moves to win (D,C,B(,E))
+                    [2] C is sink
+                        [3.5] E
+                            1. (50%) E is a miss, then we know that 2 is true, the game is won in exactly 2 (E,B) moves.
+                            2. (0%) E cannot be a hit
+                            3. (50%) E is a sink, then we know that 1 is true, the game is won in exactly 1 (E) moves.
+                        a(E) = 1*2/2 + 1*1/2 = 1.5
+                        [3.5] B
+                            1. (50%) B is a miss, then we know that 1 is true, the game is won in exactly 2 (B,E) moves.
+                            2. (0%) B cannot be a hit
+                            3. (50%) B is a sink, then we know that 2 is true, the game is won in exactly 1 (B) moves.
+                        a(B) = 1*2/2 + 1*1/2 = 1.5
+                3. (0%) sink
+            a(D) = 1*4/3 + 2*3.5/3 = 3.66
+
+            E is not the best option because, if
+                1. (66%) miss, 2 or 3: 4.5 moves to win (E,B,C,A(,D)), because
+                    [2] B is sunk
+                        [3] C is hit
+                            [4.5] A
+                                1. (50%) A is a miss, then we know that 1 is true, the game is won in exactly 2 (A,D) moves.
+                                2. (0%) A cannot be a hit
+                                3. (50%) A is a sink, then we know that 2 is true, the game is won in exactly 1 (A) moves.
+                            a(A) = 1*2/2 + 1*1/2 = 1.5
+                            [4.5] D
+                                1. (50%) D is a miss, then we know that 2 is true, the game is won in exactly 2 (D,A) moves.
+                                2. (0%) D cannot be a hit
+                                3. (50%) D is a sink, then we know that 1 is true, the game is won in exactly 1 (D) moves.
+                            a(D) = 1*2/2 + 1*1/2 = 1.5
+                2. (0%) hit
+                3. (33%) sunk, 1: 3 moves to win (B,A,C)
+            a(E) = 2*4.5/3 + 1*3/3 = 4.0
+
+
+            Let's make a prototype of this simple and proven example in python
+            DONE!
+            HOLY SHIT I HAVE JUST SOLVED BATTLESHIPS!
+
+    [X] (Impossible) It's literally cheating to always hit
 
 [ ] Add options menu
