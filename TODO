@@ -420,6 +420,92 @@ I hope this works in Java.
             Let's make a prototype of this simple and proven example in python
             DONE!
             HOLY SHIT I HAVE JUST SOLVED BATTLESHIPS!
+            The prototype found better solutions than me because it evaluates sinking!
+
+            I forgot we still need an algorithm for generating the inital belief states
+            How do we do that?
+
+            Def generateBeliefStates(originalGrid, beliefGrid, shipTypesLeft):
+                If shipsLeft is empty and all originalGrid hits on beliefShips
+                        Return [beliefGrid]
+                beliefs = []
+                For each row:
+                    For each col:
+                        For each rotation of shipTypesLeft[0]:
+                            If rotation not on originalGrid misses and sunks, not on beliefGrid hits and inside grid:
+                                newBeliefGrid = beliefGrid with beliefShip placed
+                                newShipsLeft = shipsLeft-ship
+                                beliefs += generateBeliefStates(originalGrid, newBeliefGrid, newShipsLeft)
+                Return beliefs
+
+            Computing the best move currently takes abotu 6.2 Petabytes of memory.
+            There are lots of optimizations we can do.
+            Instead of storing the complete mutated belief state,
+            we can store the mutations this is a 100b to 20b optimization,
+            putting us down to 1.2PB of RAM.
+            Then we can use a heuristic approach to prune when we already know its likely larger,
+            than the max. This improves our average depth from 100 to 20.
+            So were at 38TB of RAM.
+            
+            FUCK THIS SHIT IS GOING NOWHERE.
+
+            I need to think about the actual 125TB of beliefstates.
+            We need to think of it as a tree of state mutations so that
+            the upwards gives up one of the belifstates based on ships.
+            Mutations of a beliefstate are limited. We have a set order the
+            remaining ships need to go in in the tree. Each ship has less than
+            100 possible locations. 
+            A 1x1 ship has 100 (7b) possible locations but no rotation (0b). (7b)
+            A 2x1 ship has 90 (7b) possible locations but 2 rotations (1b). (8b)
+            A 3x1 ship has 80 (7b) possible locations and 2 rotations (1b). (8b)
+            There is another 3x1. (8b)
+            A 4x1 ship has 70 (7b) possible locations and 2 rotations (1b). (8b)
+            The U ship has 8x9 = 72 (7b) possible locations and 4 rotations (2b). (9b)
+            
+            Each leaf is then 48b of total data.
+            There are 4x72 x 70x2 x 80x2 x 80x2 x 90x2 x 100 = 19 000 000 000 000 leafs.
+            We need to filter these 19 000 000 000 000 leafs. This is 45b of indexing,
+            not 48b. 19TB to filter the beliefstates is already much better than the
+            125TB we had before.
+
+            Some of those 19 000 000 000 000 leafs are duplicates, as there are 2 3x1 ships.
+            There are 12800 possibilities instead of 80x2 x 80x2, this makes it just 9T leafs.
+            Were down to 44b of indexes and 9TB of filters.
+
+            Then we can consider that most of these are impossible as ships overlap, but how
+            do we know that without checking all the ships if they overlap?
+            We want to reduce our 9T leafs to only those that are possible,
+            such that when talking about bit 69 in our index we still know exactly which
+            beliefstate its refering to.
+
+
+            I am fucking stooopid.
+            We don't need a 9TB filter bitmap.
+            We just need to store the possible beliefstates and deeper we can just
+            store the filtered out indexes. When traversing the beliefstates leafs,
+            we can simply skip these filtered out indexes. This requires storing
+            the filtered out indexes. Actually, when filtering out indexes, we can
+            eliminate entire branches of the 48b leafs by stating entire starts of
+            bit sequences are impossible. This way we can store the filters.
+            Fuck that we can just store the filters as "where X is Y"
+            Nevermind, we need to store the modifications because of the sunk possibility.
+            Each modification must be filtering. no. because the next move has a change
+            of tiles already hit.
+            so thats 100 possible hit tiles = 7b x 50 depth = 350b
+            Thats nothing. We don't even need to worry, we can just create 50 of that.
+            Now each beliefstate filter can be saying how the tree is limited by saying
+            branches need to be hits and misses somewhere and we can just store if
+            its sunks by storing the hit tiles (350b) and then traverse and just
+            differentiate on the leaf. Whats the most efficient huffman coding for
+            these filters. There are 3 types of filters: Hit, miss, sunk.
+
+
+
+            I am not resorting to stupid heuristic approaches.
+            THIS IS WHERE IM STUCK PLS HELP.
+
+
+
 
     [X] (Impossible) It's literally cheating to always hit
 
