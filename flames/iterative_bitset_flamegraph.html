@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='utf-8'>
+<style>
+	body {margin: 0; padding: 10px 10px 22px 10px; background-color: #ffffff}
+	h1 {margin: 5px 0 0 0; font-size: 18px; font-weight: normal; text-align: center}
+	header {margin: -24px 0 5px 0; line-height: 24px}
+	button {font: 12px sans-serif; cursor: pointer}
+	p {position: fixed; bottom: 0; margin: 0; padding: 2px 3px 2px 3px; outline: 1px solid #ffc000; display: none; overflow: hidden; white-space: nowrap; background-color: #ffffe0}
+	a {color: #0366d6}
+	#hl {position: absolute; display: none; overflow: hidden; white-space: nowrap; pointer-events: none; background-color: #ffffe0; outline: 1px solid #ffc000; height: 15px}
+	#hl span {padding: 0 3px 0 3px}
+	#status {left: 0}
+	#match {right: 0}
+	#reset {cursor: pointer}
+	#canvas {width: 100%; height: 304px}
+</style>
+</head>
+<body style='font: 12px Verdana, sans-serif'>
+<h1>CPU profile</h1>
+<header style='text-align: left'><button id='inverted' title='Invert'>&#x1f53b;</button>&nbsp;&nbsp;<button id='search' title='Search'>&#x1f50d;</button></header>
+<header style='text-align: right'>Produced by <a href='https://github.com/async-profiler/async-profiler'>async-profiler</a></header>
+<canvas id='canvas'></canvas>
+<div id='hl'><span></span></div>
+<p id='status'></p>
+<p id='match'>Matched: <span id='matchval'></span> <span id='reset' title='Clear'>&#x274c;</span></p>
+<script>
+	// Copyright The async-profiler authors
+	// SPDX-License-Identifier: Apache-2.0
+	'use strict';
+	let root, px, pattern;
+	let level0 = 0, left0 = 0, width0 = 0;
+	let nav = [], navIndex, matchval;
+	let inverted = false;
+	const levels = Array(19);
+	for (let h = 0; h < levels.length; h++) {
+		levels[h] = [];
+	}
+
+	const canvas = document.getElementById('canvas');
+	const c = canvas.getContext('2d');
+	const hl = document.getElementById('hl');
+	const status = document.getElementById('status');
+
+	const canvasWidth = canvas.offsetWidth;
+	const canvasHeight = canvas.offsetHeight;
+	canvas.style.width = canvasWidth + 'px';
+	canvas.width = canvasWidth * (devicePixelRatio || 1);
+	canvas.height = canvasHeight * (devicePixelRatio || 1);
+	if (devicePixelRatio) c.scale(devicePixelRatio, devicePixelRatio);
+	c.font = document.body.style.font;
+
+	const palette = [
+		[0xb2e1b2, 20, 20, 20],
+		[0x50e150, 30, 30, 30],
+		[0x50cccc, 30, 30, 30],
+		[0xe15a5a, 30, 40, 40],
+		[0xc8c83c, 30, 30, 10],
+		[0xe17d00, 30, 30,  0],
+		[0xcce880, 20, 20, 20],
+	];
+
+	function getColor(p) {
+		const v = Math.random();
+		return '#' + (p[0] + ((p[1] * v) << 16 | (p[2] * v) << 8 | (p[3] * v))).toString(16);
+	}
+
+	function f(key, level, left, width, inln, c1, int) {
+		levels[level0 = level].push({level, left: left0 += left, width: width0 = width || width0,
+			color: getColor(palette[key & 7]), title: cpool[key >>> 3],
+			details: (int ? ', int=' + int : '') + (c1 ? ', c1=' + c1 : '') + (inln ? ', inln=' + inln : '')
+		});
+	}
+
+	function u(key, width, inln, c1, int) {
+		f(key, level0 + 1, 0, width, inln, c1, int)
+	}
+
+	function n(key, width, inln, c1, int) {
+		f(key, level0, width0, width, inln, c1, int)
+	}
+
+	function samples(n) {
+		return n === 1 ? '1 sample' : n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' samples';
+	}
+
+	function pct(a, b) {
+		return a >= b ? '100' : (100 * a / b).toFixed(2);
+	}
+
+	function findFrame(frames, x) {
+		let left = 0;
+		let right = frames.length - 1;
+
+		while (left <= right) {
+			const mid = (left + right) >>> 1;
+			const f = frames[mid];
+
+			if (f.left > x) {
+				right = mid - 1;
+			} else if (f.left + f.width <= x) {
+				left = mid + 1;
+			} else {
+				return f;
+			}
+		}
+
+		if (frames[left] && (frames[left].left - x) * px < 0.5) return frames[left];
+		if (frames[right] && (x - (frames[right].left + frames[right].width)) * px < 0.5) return frames[right];
+
+		return null;
+	}
+
+	function removeStack(left, width) {
+		for (let h = 0; h < levels.length; h++) {
+			const frames = levels[h], newFrames = [];
+			for (let i = 0; i < frames.length; i++) {
+				const f = frames[i];
+				if (f.left >= left + width) {
+					f.left -= width;
+				} else if (f.left + f.width > left) {
+					if ((f.width -= width) <= 0 && h) continue;
+				}
+				newFrames.push(f);
+			}
+			levels[h] = newFrames;
+		}
+	}
+
+	function search(r) {
+		if (r === true && (r = prompt('Enter regexp to search:', '')) === null) {
+			return;
+		}
+
+		pattern = r ? RegExp(r) : undefined;
+		const matched = render(root, nav = []);
+		navIndex = -1;
+		document.getElementById('matchval').textContent = matchval = pct(matched, root.width) + '%';
+		document.getElementById('match').style.display = r ? 'inline-block' : 'none';
+	}
+
+	function render(newRoot, nav) {
+		if (root) {
+			c.fillStyle = '#ffffff';
+			c.fillRect(0, 0, canvasWidth, canvasHeight);
+		}
+
+		root = newRoot || levels[0][0];
+		px = canvasWidth / root.width;
+
+		const x0 = root.left;
+		const x1 = x0 + root.width;
+		const marked = [];
+
+		function mark(f) {
+			return marked[f.left] || (marked[f.left] = f);
+		}
+
+		function totalMarked() {
+			let total = 0;
+			let left = 0;
+			Object.keys(marked).sort(function(a, b) { return a - b; }).forEach(function(x) {
+				if (+x >= left) {
+					const m = marked[x];
+					if (nav) nav.push(m);
+					total += m.width;
+					left = +x + m.width;
+				}
+			});
+			return total;
+		}
+
+		function drawFrame(f, y) {
+			if (f.left < x1 && f.left + f.width > x0) {
+				c.fillStyle = pattern && f.title.match(pattern) && mark(f) ? '#ee00ee' : f.color;
+				c.fillRect((f.left - x0) * px, y, f.width * px, 15);
+
+				if (f.width * px >= 21) {
+					const chars = Math.floor(f.width * px / 7);
+					const title = f.title.length <= chars ? f.title : f.title.substring(0, chars - 2) + '..';
+					c.fillStyle = '#000000';
+					c.fillText(title, Math.max(f.left - x0, 0) * px + 3, y + 12, f.width * px - 6);
+				}
+
+				if (f.level < root.level) {
+					c.fillStyle = 'rgba(255, 255, 255, 0.5)';
+					c.fillRect((f.left - x0) * px, y, f.width * px, 15);
+				}
+			}
+		}
+
+		for (let h = 0; h < levels.length; h++) {
+			const y = inverted ? h * 16 : canvasHeight - (h + 1) * 16;
+			const frames = levels[h];
+			for (let i = 0; i < frames.length; i++) {
+				drawFrame(frames[i], y);
+			}
+		}
+
+		return totalMarked();
+	}
+
+	function unpack(cpool) {
+		for (let i = 1; i < cpool.length; i++) {
+			cpool[i] = cpool[i - 1].substring(0, cpool[i].charCodeAt(0) - 32) + cpool[i].substring(1);
+		}
+	}
+
+	canvas.onmousemove = function() {
+		const h = Math.floor((inverted ? event.offsetY : (canvasHeight - event.offsetY)) / 16);
+		if (h >= 0 && h < levels.length) {
+			const f = findFrame(levels[h], event.offsetX / px + root.left);
+			if (f) {
+				if (f !== root) getSelection().removeAllRanges();
+				hl.style.left = (Math.max(f.left - root.left, 0) * px + canvas.offsetLeft) + 'px';
+				hl.style.width = (Math.min(f.width, root.width) * px) + 'px';
+				hl.style.top = ((inverted ? h * 16 : canvasHeight - (h + 1) * 16) + canvas.offsetTop) + 'px';
+				hl.firstChild.textContent = f.title;
+				hl.style.display = 'block';
+				canvas.title = f.title + '\n(' + samples(f.width) + f.details + ', ' + pct(f.width, levels[0][0].width) + '%)';
+				canvas.style.cursor = 'pointer';
+				canvas.onclick = function() {
+					if (event.altKey && h >= root.level) {
+						removeStack(f.left, f.width);
+						root.width > f.width ? render(root) : render();
+					} else if (f !== root) {
+						render(f);
+					}
+					canvas.onmousemove();
+				};
+				status.textContent = 'Function: ' + canvas.title;
+				status.style.display = 'inline-block';
+				return;
+			}
+		}
+		canvas.onmouseout();
+	}
+
+	canvas.onmouseout = function() {
+		hl.style.display = 'none';
+		status.style.display = 'none';
+		canvas.title = '';
+		canvas.style.cursor = '';
+		canvas.onclick = null;
+	}
+
+	canvas.ondblclick = function() {
+		getSelection().selectAllChildren(hl);
+	}
+
+	document.getElementById('inverted').onclick = function() {
+		inverted = !inverted;
+		render();
+	}
+
+	document.getElementById('search').onclick = function() {
+		search(true);
+	}
+
+	document.getElementById('reset').onclick = function() {
+		search(false);
+	}
+
+	window.onkeydown = function(event) {
+		if ((event.ctrlKey || event.metaKey) && event.key === 'f') {
+			event.preventDefault();
+			search(true);
+		} else if (event.key === 'Escape') {
+			search(false);
+		} else if ((event.key === 'n' || event.key === 'N') && nav.length > 0) {
+			navIndex = (navIndex + (event.shiftKey ? nav.length - 1 : 1)) % nav.length;
+			render(nav[navIndex]);
+			document.getElementById('matchval').textContent = matchval + ' (' + (navIndex + 1) + ' of ' + nav.length + ')';
+			window.scroll(0, inverted ? root.level * 16 : canvasHeight - (root.level + 1) * 16);
+			canvas.onmousemove();
+		}
+	}
+
+const cpool = [
+'all',
+' Assembler::locate_operand',
+' BitMap::clear_range',
+'!otStrategy.generateAttackPosition',
+' ClassLoaderData::oops_do',
+'/Graph::roots_cld_do',
+'!odeBlobToOopClosure::do_code_blob',
+'$Cache::blobs_do',
+')UnloadingTask::claim_nmethods',
+'8work',
+'$Heap::find_blob',
+'*next_used',
+'"mpiledMethod::cleanup_inline_caches_impl',
+'0unload_nmethod_caches',
+' FreeListAllocator::reset',
+' G1AdjustClosure::do_oop',
+'(RegionClosure::do_heap_region',
+'"BatchedTask::work',
+'"CardSet::clear',
+')MemoryManager::flush',
+'#learBitMapTask::G1ClearBitmapHRClosure::do_heap_region',
+'#odeBlobClosure::do_code_blob',
+'&RootSet::reset_table_scanner',
+'$llectedHeap::do_full_collection',
+'1prepare_for_mutator_after_full_collection',
+'1satisfy_failed_allocation',
+'"EvacuateRegionsBaseTask::work',
+'1Task::evacuate_live_objects',
+'7scan_roots',
+'"FromCardCache::clear',
+'#ullCollector::collect',
+'3mplete_collection',
+'1phase2_prepare_compaction',
+'7c_prepare_serial_compaction',
+'64_do_compaction',
+'&GCAdjustTask::work',
+'(CompactTask::compact_region',
+'5serial_compaction',
+'(MarkTask::work',
+',er::complete_marking',
+'(PrepareTask::work',
+'(RefProcProxyTask::work',
+'*setMetadataTask::G1ResetMetadataClosure::do_heap_region',
+'Sscrub_skip_compacting_region',
+';work',
+'"MonotonicArena::drop_all',
+'"NmethodProcessor::do_regular_processing',
+'"ParEvacuateFollowersClosure::do_void',
+'%ScanThreadState::handle_evacuation_failure_par',
+'6steal_and_trim_queue',
+'6trim_queue_to_threshold',
+'%allelCleaningTask::work',
+'#repareEvacuationTask::G1PrepareRegionsClosure::do_heap_region',
+'9work',
+'"RegionMarkStatsCache::add_live_words',
+'$mSet::prepare_region_for_scan',
+'*scan_heap_roots',
+'%oveSelfForwardsTask::process_chunk',
+':work',
+'#ootProcessor::evacuate_roots',
+'1process_all_roots',
+'9java_roots',
+'9strong_roots',
+'"ScanHRForRegionClosure::scan_heap_roots',
+'!CIdMark::~GCIdMark',
+'!ame.main',
+'%play',
+'!enericTaskQueueSet<OverflowTaskQueue<ObjArrayTask, (MEMFLAGS)5, 131072u>, (MEMFLAGS)5>::tasks',
+'FoopDesc*, (MEMFLAGS)5, 131072u>, (MEMFLAGS)5>::steal_best_of_2',
+'!rid.getHitTiles',
+' HeapRegionManager::par_iterate',
+'*RemSet::clear',
+' InstanceKlass::allocate_instance',
+'(MirrorKlass::oop_size',
+' JavaThread::oops_do_frames',
+' MainMode.update',
+'"rkBitMap::do_clear',
+'!emAllocator::allocate',
+'.mem_allocate_inside_tlab_slow',
+'#Region::intersection',
+'"thod::is_method_handle_intrinsic',
+'!onitor::wait_without_safepoint_check',
+'!utex::lock_without_safepoint_check',
+' OptoRuntime::new_instance_C',
+' PeriodicTask::real_time_tick',
+'!latformMonitor::wait',
+'!robabilityAttackStrategy.generateAttackPosition',
+'BBeliefStates',
+' RebuildCodeRootClosure::do_code_blob',
+'"fProcSoftWeakFinalPhaseTask::rp_work',
+'#erenceProcessor::process_discovered_list_work',
+'"locIterator::initialize',
+' ShipBox.getOccupiedRelativePositions',
+'!pinPause',
+' TaskTerminator::offer_termination',
+'!hread::call_run',
+')laim_par_threads_do',
+'(oops_do',
+'&s::possibly_parallel_oops_do',
+' VMThread::evaluate_operation',
+'*inner_execute',
+'*run',
+'"_G1CollectForAllocation::doit',
+'#Operation::evaluate',
+' WatcherThread::run',
+'/sleep',
+'!orkerThread::run',
+' [unknown_Java]',
+'!vdso]',
+' __GI___lll_lock_wait',
+'2ke',
+'\'pthread_cond_broadcast',
+'/mutex_lock',
+'"futex_abstimed_wait_common',
+'"memset_avx2_unaligned_erms',
+'"pthread_mutex_cond_lock',
+'!new_instance_Java',
+' clock_gettime@@GLIBC_2.17',
+'#ne3',
+' frame::oops_interpreted_do',
+' java/lang/invoke/DirectMethodHandle$Holder.newInvokeSpecial',
+'C.allocateInstance',
+'1Invokers$Holder.linkToTargetMethod',
+'%util/ArrayList.add',
+'4grow',
+'/s.copyOf',
+'*Spliterator.getExactSizeIfKnown',
+'*stream/AbstractPipeline.copyInto',
+'JWithCancel',
+'Bevaluate',
+'BwrapAndCopyInto',
+'1MatchOps$MatchOp.evaluateSequential',
+'9.makeRef',
+'1ReferencePipeline.allMatch',
+' memset@plt',
+'"tadata_Relocation::unpack_data',
+' nmethod::do_unloading',
+')fix_oop_relocations',
+')oops_do',
+'0_process_weak',
+' oop_Relocation::oop_value',
+' pthread_cond_timedwait@@GLIBC_2.3.2',
+' start_thread',
+' thread_native_entry',
+' void G1FullGCMarker::mark_and_push<narrowOop>',
+'CoopDesc*>',
+'%OopOopIterateBackwardsDispatch<G1ScanEvacuatedObjClosure>::Table::oop_oop_iterate_backwards<InstanceKlass, narrowOop>',
+'3oundedDispatch<G1AdjustClosure>::Table::oop_oop_iterate_bounded<ObjArrayKlass, narrowOop>',
+'2Dispatch<G1AdjustClosure>::Table::oop_oop_iterate<InstanceKlass, narrowOop>',
+'lRefKlass, narrowOop>',
+'dObjArrayKlass, narrowOop>',
+'dTypeArrayKlass, narrowOop>',
+'=MarkAndPushClosure>::Table::oop_oop_iterate<InstanceKlass, narrowOop>',
+'qMirrorKlass, narrowOop>',
+'iTypeArrayKlass, narrowOop>',
+'%objArrayOopDesc::oop_iterate_range<G1MarkAndPushClosure>'
+];
+unpack(cpool);
+
+n(3,70491)
+u(521,7)
+u(529)
+u(601)
+u(25)
+u(689)
+u(697)
+u(554,1)
+n(737,3)
+f(986,8,1,2)
+u(986)
+u(994)
+u(994)
+u(1002)
+f(1066,7,2,3,1,0,0)
+f(1033,8,1,1)
+u(1049)
+u(1049)
+u(1041)
+u(1017)
+u(1025)
+u(1009)
+f(1057,8,1)
+u(977)
+u(961)
+u(969)
+u(668)
+u(580)
+u(620)
+u(628)
+u(915)
+f(859,1,1)
+u(931)
+u(668)
+f(947,1,1,70483)
+u(1139)
+u(1148)
+u(764)
+u(812,12)
+u(804)
+u(796)
+u(828)
+u(820)
+u(204)
+u(188)
+u(244,9)
+u(260,4)
+u(268)
+f(276,13,4,5)
+u(300)
+u(292)
+f(252,12,5,3)
+u(196)
+u(60,2)
+u(708)
+u(1108)
+f(1124,17,1,1)
+u(12)
+f(92,14,1)
+f(836,5,1,2)
+u(676,1)
+n(844)
+u(652)
+u(684)
+u(1131)
+u(907)
+f(852,5,1,70469)
+u(140,3)
+u(468)
+f(460,8,1,2)
+f(212,6,2,47)
+u(220,42)
+u(380)
+u(396,34)
+f(388,10,24,4)
+f(1172,11,3,1)
+f(404,10,1,6)
+f(747,9,6,1)
+n(756,7)
+u(652,3)
+u(684)
+u(939,1)
+u(867)
+f(1131,12,1,2)
+u(875,1)
+n(883)
+f(660,10,1,2)
+u(875)
+f(883,10,2,1)
+n(891)
+f(228,7,1,5)
+u(452,3)
+u(508)
+u(404)
+f(476,8,3,2)
+u(492)
+u(772,1)
+n(788)
+u(780)
+u(596)
+u(172)
+u(1116)
+u(372)
+u(1108)
+u(1124)
+u(12)
+f(284,6,1,22049)
+u(60,12)
+u(52,7)
+u(1108)
+f(732,10,5,2)
+f(1084,8,2)
+n(1100,3)
+f(484,7,3)
+u(44)
+u(36,1)
+n(124,2)
+f(564,7,2,22034)
+f(132,8,5,18671)
+f(1188,9,14319,4351)
+n(1196,1)
+f(1180,8,1,1899)
+n(1188,813)
+n(1204,1)
+n(1212,645)
+f(308,6,645,26704)
+u(316,24418)
+f(36,8,3976,3)
+n(436,238)
+n(540,4)
+n(747,1)
+n(756,19)
+f(652,9,2,10)
+u(684)
+u(1131)
+u(883,2)
+n(907,7)
+n(923,1)
+f(660,9,1)
+u(899)
+f(883,9,1,4)
+n(899,2)
+f(1156,8,2,439)
+n(1220,10174)
+f(36,9,7080,533)
+n(436,2561)
+f(1228,8,2561,2)
+n(1244,9562)
+f(436,9,610,211)
+n(1156,8741)
+f(436,10,7136,1605)
+f(500,7,1605,1)
+u(788)
+u(780)
+u(596)
+u(956)
+u(1164)
+u(588)
+f(548,7,1)
+n(1220,1087)
+n(1236,1197)
+f(324,6,1197,4)
+n(332,1)
+u(716)
+u(724)
+f(356,6,1,20565)
+u(564)
+f(340,8,2,20525)
+f(348,9,11,20494)
+n(572,20)
+f(116,10,1,9)
+n(148,3)
+n(156,1)
+n(236,4)
+n(364,2)
+f(348,8,2,1)
+n(915,37)
+f(412,6,37,7)
+u(76)
+u(68,2)
+n(92,3)
+n(1092,2)
+u(108,1)
+u(100)
+u(84)
+f(644,9,1)
+f(428,6,1,3)
+u(564)
+f(420,8,1,2)
+u(444)
+u(180)
+f(516,6,2,1)
+n(564,1085)
+f(164,7,8,1077)
+f(612,8,4,1072)
+f(20,9,2,3)
+n(915,1066)
+n(1075,1)
+f(636,8,1)
+
+search();
+</script></body></html>

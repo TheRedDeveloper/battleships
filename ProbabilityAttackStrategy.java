@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.List;
 
 public class ProbabilityAttackStrategy implements AttackStrategy {
@@ -7,10 +8,9 @@ public class ProbabilityAttackStrategy implements AttackStrategy {
 
     @Override
     public Position generateAttackPosition(Grid opponentGrid) {
-        // TODO
         Game.LOGGER.info("Generating attack position...");
         int[][] hitCount = new int[10][10];
-        boolean[][] realState = new boolean[10][10];
+        BitSet realState = new BitSet(100);
         List<ShipType> shipTypesLeft = new ArrayList<>();
         BuildMode.totalShipTypeCounts.forEach((shipType, count) -> {
             for (int i = 0; i < count; i++) {
@@ -19,15 +19,15 @@ public class ProbabilityAttackStrategy implements AttackStrategy {
         });
         opponentGrid.getSunkShips().forEach(ship -> {
             for (Position pos : ship.getOccupiedPositions()) {
-                realState[pos.x][pos.y] = true;
+                realState.set(pos.x * 10 + pos.y);
             }
             shipTypesLeft.remove(ship.getType());
         });
         Game.LOGGER.info("Generating belief states...");
-        for (boolean[][] beliefGrid : generateBeliefStates(opponentGrid, realState, shipTypesLeft)) {
+        for (BitSet beliefGrid : generateBeliefStates(opponentGrid, realState, shipTypesLeft)) {
             for (int row = 0; row < 10; row++) {
                 for (int col = 0; col < 10; col++) {
-                    if (beliefGrid[row][col]) {
+                    if (beliefGrid.get(row * 10 + col)) {
                         hitCount[row][col]++;
                     }
                 }
@@ -39,20 +39,20 @@ public class ProbabilityAttackStrategy implements AttackStrategy {
     }
 
     // TODO: This could probably benefit from iterative unfolding
-    private List<boolean[][]> generateBeliefStates(Grid opponentGrid, boolean[][] beliefGrid, List<ShipType> shipTypesLeft) {
+    private List<BitSet> generateBeliefStates(Grid opponentGrid, BitSet beliefGrid, List<ShipType> shipTypesLeft) {
         if (shipTypesLeft.isEmpty()) {
             if (opponentGrid.getHitTiles().stream().allMatch(tile ->
                 tile.data.containedShip != null ?
-                    beliefGrid[tile.position.x][tile.position.y]
-                    : !beliefGrid[tile.position.x][tile.position.y])) {
-                List<boolean[][]> result = new ArrayList<>();
-                result.add(beliefGrid); // Why Java, why?
+                    beliefGrid.get(tile.position.x * 10 + tile.position.y)
+                    : !beliefGrid.get(tile.position.x * 10 + tile.position.y))) {
+                List<BitSet> result = new ArrayList<>();
+                result.add(beliefGrid);
                 _debugBeliefStateCount++;
                 if (_debugBeliefStateCount % 1000 == 0) {
                     StringBuilder gridStr = new StringBuilder("\n");
-                    for (int i = 0; i < beliefGrid.length; i++) {
-                        for (int j = 0; j < beliefGrid[i].length; j++) {
-                            gridStr.append(beliefGrid[j][i] ? "1 " : "0 ");
+                    for (int i = 0; i < 10; i++) {
+                        for (int j = 0; j < 10; j++) {
+                            gridStr.append(beliefGrid.get(j * 10 + i) ? "1 " : "0 ");
                         }
                         gridStr.append("\n");
                     }
@@ -63,7 +63,7 @@ public class ProbabilityAttackStrategy implements AttackStrategy {
                 return new ArrayList<>();
             }
         } 
-        List<boolean[][]> beliefStates = new ArrayList<>();
+        List<BitSet> beliefStates = new ArrayList<>();
         for (int row = 0; row < 10; row++) {
             for (int col = 0; col < 10; col++) {
                 Position pos = new Position(row, col);
@@ -76,24 +76,24 @@ public class ProbabilityAttackStrategy implements AttackStrategy {
                             .allMatch(occupiedPosition -> {
                                 Position absolutePosition = occupiedPosition.add(pos);
                                 if (!opponentGrid.isInBounds(absolutePosition)) return false;
-                                boolean overlap = beliefGrid[absolutePosition.x][absolutePosition.y];
+                                boolean overlap = beliefGrid.get(absolutePosition.x * 10 + absolutePosition.y);
                                 if (overlap) {
                                     return false;
                                 } else if (!opponentGrid.getTile(absolutePosition).data.isHit) {
-                                    return true; // It's unknown
+                                    return true;
                                 } else {
                                     return opponentGrid.getShipAt(absolutePosition) != null;
                                 }
                             });
                     if (valid) {
-                        boolean[][] newBeliefGrid = new boolean[10][10];
+                        BitSet newBeliefGrid = new BitSet(100);
                         List<Position> occupiedPositions = rotation.getOccupiedRelativePositions();
                         for (int i = 0; i < 10; i++) {
                             for (int j = 0; j < 10; j++) {
-                                if (occupiedPositions.contains(new Position(i - pos.x, j - pos.y))) {
-                                    newBeliefGrid[i][j] = true;
+                                if (occupiedPositions.contains(new Position(i - pos.x, j - pos.y))) { // .contains is inefficient, it calls indexOf
+                                    newBeliefGrid.set(i * 10 + j);
                                 } else {
-                                    newBeliefGrid[i][j] = beliefGrid[i][j];
+                                    newBeliefGrid.set(i * 10 + j, beliefGrid.get(i * 10 + j));
                                 }
                             }
                         }
