@@ -37,6 +37,18 @@ public class ShipBox extends Box {
         }
         return positions;
     }
+
+    public List<Position> getOccupiedAbsolutePositions(int ox, int oy) {
+        List<Position> positions = new ArrayList<>();
+        for (int y = 0; y < sy; y++) {
+            for (int x = 0; x < sx; x++) {
+                if (occupationMatrix[y][x]) {
+                    positions.add(new Position(x + ox, y + oy));
+                }
+            }
+        }
+        return positions;
+    }
     
     /** Display the ship box as character at the given coordinates on the display with cellWidth*/
     public void displayFromAbsoluteTopLeftOn(int x, int y, AsciiDisplay display, char character, int cellWidth) {

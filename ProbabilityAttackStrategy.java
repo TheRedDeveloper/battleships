@@ -42,16 +42,15 @@ public class ProbabilityAttackStrategy implements AttackStrategy {
         return new Position(0, 0);
     }
 
-    // TODO: This could probably benefit from iterative unfolding
     private List<BitSet> generateBeliefStates(Grid opponentGrid, BitSet beliefGrid, List<ShipType> shipTypesLeft) {
         if (shipTypesLeft.isEmpty()) {
             if (opponentGrid.getHitTiles().stream().allMatch(tile ->
                 tile.data.containedShip != null ?
                     beliefGrid.get(tile.position.x * 10 + tile.position.y)
                     : !beliefGrid.get(tile.position.x * 10 + tile.position.y))) {
-                        _debugBeliefStateCount++;
-                        if (_debugBeliefStateCount % 1000 == 0) {
-                            StringBuilder gridStr = new StringBuilder("\n");
+                _debugBeliefStateCount++;
+                if (_debugBeliefStateCount % 1000 == 0) {
+                    StringBuilder gridStr = new StringBuilder("\n");
                     for (int i = 0; i < 10; i++) {
                         for (int j = 0; j < 10; j++) {
                             gridStr.append(beliefGrid.get(j * 10 + i) ? "1 " : "0 ");
@@ -70,29 +69,26 @@ public class ProbabilityAttackStrategy implements AttackStrategy {
             }
         } else {
             List<BitSet> beliefStates = new ArrayList<>();
-            for (int row = 0; row < 10; row++) {
-                for (int col = 0; col < 10; col++) {
-                    Position pos = new Position(col, row);
-                    ShipBox shipBox = Ship.boxByType.get(shipTypesLeft.get(0));
+            ShipBox shipBox = Ship.boxByType.get(shipTypesLeft.get(0));
+            for (int col = 0; col < 10; col++) {
+                for (int row = 0; row < 10; row++) {
                     for (Direction direction : shipBox.getUniqueDirections()) {
                         ShipBox rotation = shipBox.inDirection(direction);
-                        // TODO: This needs a lot of optimization
+                        List<Position> occupiedPositions = rotation.getOccupiedAbsolutePositions(col, row);
                         boolean valid = true;
-                        for (Position occupiedPosition : rotation.getOccupiedRelativePositions()) {
-                            Position absolutePosition = occupiedPosition.add(pos);
-                            if (!opponentGrid.isInBounds(absolutePosition) || 
-                                beliefGrid.get(absolutePosition.x * 10 + absolutePosition.y) ||
-                                (opponentGrid.getTile(absolutePosition).data.isHit && 
-                                 opponentGrid.getShipAt(absolutePosition) == null)) {
+                        for (Position occupiedPosition : occupiedPositions) {
+                            if (!opponentGrid.isInBounds(occupiedPosition) || 
+                                beliefGrid.get(occupiedPosition.x * 10 + occupiedPosition.y) ||
+                                (opponentGrid.getTile(occupiedPosition).data.isHit && 
+                                 opponentGrid.getShipAt(occupiedPosition) == null)) {
                                 valid = false;
                                 break;
                             }
                         }
                         if (valid) {
                             BitSet newBeliefGrid = (BitSet) beliefGrid.clone(); 
-                            List<Position> occupiedPositions = rotation.getOccupiedRelativePositions();
                             for (Position occupiedPosition : occupiedPositions) {
-                                newBeliefGrid.set((occupiedPosition.x + row) * 10 + occupiedPosition.y + col);
+                                newBeliefGrid.set((occupiedPosition.x) * 10 + occupiedPosition.y);
                             }
                             List<ShipType> newShipTypesLeft = new ArrayList<>(shipTypesLeft);
                             newShipTypesLeft.remove(0);
@@ -104,4 +100,5 @@ public class ProbabilityAttackStrategy implements AttackStrategy {
             return beliefStates;
         }
     }
+    // I don't need to fucking store all of them?! Am I stupid?
 }
