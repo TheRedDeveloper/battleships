@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -31,8 +32,8 @@ public class Grid {
         tiles[x][y] = tileData;
     }
 
-    public Collection<Tile> getTiles() {
-        Collection<Tile> tileList = new ArrayList<>();
+    public List<Tile> getTiles() {
+        List<Tile> tileList = new ArrayList<>();
         int x = 0;
         for (TileData[] row : tiles) {
             int y = 0;

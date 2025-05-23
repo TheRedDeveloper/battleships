@@ -502,7 +502,68 @@ I hope this works in Java.
 
 
             I am not resorting to stupid heuristic approaches.
-            THIS IS WHERE IM STUCK PLS HELP.
+            
+
+
+            I wrote a java program to generate beliefstates and realized it's not needed, here it is
+            private List<BitSet> generateBeliefStates(Grid opponentGrid, BitSet beliefGrid, List<ShipType> shipTypesLeft) {
+                if (shipTypesLeft.isEmpty()) {
+                    if (opponentGrid.getHitTiles().stream().allMatch(tile ->
+                        tile.data.containedShip != null ?
+                            beliefGrid.get(tile.position.x * 10 + tile.position.y)
+                            : !beliefGrid.get(tile.position.x * 10 + tile.position.y))) {
+                        _debugBeliefStateCount++;
+                        if (_debugBeliefStateCount % 1000 == 0) {
+                            StringBuilder gridStr = new StringBuilder("\n");
+                            for (int i = 0; i < 10; i++) {
+                                for (int j = 0; j < 10; j++) {
+                                    gridStr.append(beliefGrid.get(j * 10 + i) ? "1 " : "0 ");
+                                }
+                                gridStr.append("\n");
+                            }
+                            long milis = Duration.between(startTime, Instant.now()).toMillis();
+                            int perSecond = (int) ((long) _debugBeliefStateCount * 1000 / milis);
+                            Game.LOGGER.info("Generated " + _debugBeliefStateCount + " belief states in " + milis + " ms (" + perSecond + "/s)" + gridStr);
+                        }
+                        List<BitSet> result = new ArrayList<>();
+                        result.add(beliefGrid);
+                        return result;
+                    } else {
+                        return new ArrayList<>();
+                    }
+                } else {
+                    List<BitSet> beliefStates = new ArrayList<>();
+                    ShipBox shipBox = Ship.boxByType.get(shipTypesLeft.get(0));
+                    for (int col = 0; col < 10; col++) {
+                        for (int row = 0; row < 10; row++) {
+                            for (Direction direction : shipBox.getUniqueDirections()) {
+                                ShipBox rotation = shipBox.inDirection(direction);
+                                List<Position> occupiedPositions = rotation.getOccupiedAbsolutePositions(col, row);
+                                boolean valid = true;
+                                for (Position occupiedPosition : occupiedPositions) {
+                                    if (!opponentGrid.isInBounds(occupiedPosition) || 
+                                        beliefGrid.get(occupiedPosition.x * 10 + occupiedPosition.y) ||
+                                        (opponentGrid.getTile(occupiedPosition).data.isHit && 
+                                        opponentGrid.getShipAt(occupiedPosition) == null)) {
+                                        valid = false;
+                                        break;
+                                    }
+                                }
+                                if (valid) {
+                                    BitSet newBeliefGrid = (BitSet) beliefGrid.clone(); 
+                                    for (Position occupiedPosition : occupiedPositions) {
+                                        newBeliefGrid.set((occupiedPosition.x) * 10 + occupiedPosition.y);
+                                    }
+                                    List<ShipType> newShipTypesLeft = new ArrayList<>(shipTypesLeft);
+                                    newShipTypesLeft.remove(0);
+                                    beliefStates.addAll(generateBeliefStates(opponentGrid, newBeliefGrid, newShipTypesLeft));
+                                }
+                            }
+                        }
+                    }
+                    return beliefStates;
+                }
+            }
 
 
 
