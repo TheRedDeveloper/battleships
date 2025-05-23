@@ -47,8 +47,8 @@ I hope this works in Java.
 [ ] Add a win / loose mode
 [ ] Think of some really cool bot attack strategies and test them
     [X] (Easy) Random strategy: Randomly hunt
-    [ ] (Medium) Random-target strategy: Randomly hunt until a hit, then target adjacent cells
-    [ ] (Hard) Diagonal-target strategy: Randomly hunt diagonally until a hit, then target adjacent cells, unless only 1x1 remaining
+    [X] (Medium) Random-target strategy: Randomly hunt until a hit, then target adjacent cells
+    [ ] (Hard) Probability density strategy: Calculate beliefstates and count how many have hit at position 
     [ ] (Expert) Fucking complicated probabilistic approach (Need to think about this a lot): MATH!
         Factorial level depth impossibility due to information (tile occupation) as value
         THIS IS A Partially Observable Markov Decision Process (POMDP) problem AAAAAAAAA

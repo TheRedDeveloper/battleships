@@ -30,7 +30,7 @@ public class AsciiDisplay {
         
         public DisplayPanel() {
             // Try to use Noto Mono with fallbacks to other monospace fonts
-            String[] fontNames = {"DejaVu Sans Mono", Font.MONOSPACED};
+            String[] fontNames = {"CLiga Attribute Mono", "Maple Mono", "DejaVu Sans Mono", Font.MONOSPACED};
             asciiFont = null;
             
             // Try each font in order of preference
@@ -38,7 +38,7 @@ public class AsciiDisplay {
                 try {
                     asciiFont = new Font(fontName, Font.PLAIN, 16);
                     break;
-                } catch (Exception e) { /* Font failed, continue to next one */ }
+                } catch (Exception e) { Game.LOGGER.warning("Failed to load font: " + fontName); }
             }
             
             if (asciiFont == null) { throw new RuntimeException("No suitable monospace font found"); }
@@ -184,6 +184,7 @@ public class AsciiDisplay {
     public void calibrate(int calibrationX, int calibrationY) {
         if (panel != null) {
             calibrationWidth = calibrationX + 1;
+            calibrationHeight = calibrationY + 1;
             resize(GRID_WIDTH * calibrationWidth, GRID_HEIGHT * calibrationHeight);
         }
     }

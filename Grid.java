@@ -25,6 +25,7 @@ public class Grid {
         if (x < 0 || x >= tiles.length || y < 0 || y >= tiles[0].length) { throw new IllegalArgumentException("Tile coordinates out of bounds: (" + x + ", " + y + ")"); }
         return new Tile(tiles[x][y], new Position(x, y));
     }
+    public Tile getTile(Position pos) { return getTile(pos.x, pos.y); }
     
     public void setTile(int x, int y, TileData tileData) {
         tiles[x][y] = tileData;
@@ -60,8 +61,9 @@ public class Grid {
     
     public String getName() { return name; }
     public Collection<Ship> getShips() { return ships.values(); }
-    
-    public void updateShip(UUID id, Ship ship) { 
+    public Collection<Ship> getSunkShips() { return ships.values().stream().filter(Ship::isSunk).toList(); }
+
+    public void updateShip(UUID id, Ship ship) {
         if (!ships.containsKey(id)) { throw new IllegalArgumentException("Can't update Ship: Ship with ID " + id + " does not exist."); }
         if (id != ship.getId()) { throw new IllegalArgumentException("Can't update Ship: ID " + id + " does not match ship ID to update " + ship.getId()); }
         if (ship.getType() != ships.get(id).getType()) { // Yes, this is a valid operation, I decided to allow
@@ -95,7 +97,10 @@ public class Grid {
         return getShip(id);
     }
 
-    
+    public Ship getShipAt(Position pos) {
+        return getShipAt(pos.x, pos.y);
+    }
+
     private void removeOccupation(Ship ship) {
         for (Position pos : ship.getOccupiedPositions()) {
             if (tiles[pos.x][pos.y].containedShip == null) {
@@ -152,5 +157,9 @@ public class Grid {
         }
         
         return result.toString();
+    }
+    
+    public boolean isInBounds(Position pos) {
+        return pos.x >= 0 && pos.x < tiles.length && pos.y >= 0 && pos.y < tiles[0].length;
     }
 }

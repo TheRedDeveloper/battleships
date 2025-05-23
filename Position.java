@@ -24,6 +24,15 @@ public class Position {
         return new Position(x + other.x, y + other.y);
     }
 
+    public Position[] getAdjacentPositions() {
+        return new Position[] {
+            new Position(x, y - 1),  // Up
+            new Position(x + 1, y),  // Right
+            new Position(x, y + 1),  // Down
+            new Position(x - 1, y)   // Left
+        };
+    }
+    
     // For equality comparison
     @Override
     public boolean equals(Object obj) {
@@ -37,6 +46,7 @@ public class Position {
     public int hashCode() {
         return 31 * x + y;
     }
+    
     @Override
     public String toString() {
         return "Position[" + x + "," + y + "]";

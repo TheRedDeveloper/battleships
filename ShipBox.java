@@ -55,6 +55,21 @@ public class ShipBox extends Box {
         return new ShipBox(newWidth, newHeight, rotateBooleanMatrix(occupationMatrix, rotation), direction, this.color);
     }
 
+    /** Get the unique directions */
+    public Direction[] getUniqueDirections() {
+        if (sx == 1) {
+            if (sy == 1) {
+                return new Direction[] { originalDirection };
+            } else {
+                return new Direction[] { originalDirection, originalDirection.rotated(RotationDirection.CLOCKWISE) };
+            }
+        } else if (sy == 1) {
+            return new Direction[] { originalDirection, originalDirection.rotated(RotationDirection.CLOCKWISE) };
+        } else {
+            return new Direction[] { originalDirection, originalDirection.rotated(RotationDirection.CLOCKWISE), originalDirection.rotated(RotationDirection.COUNTER_CLOCKWISE), originalDirection.rotated(RotationDirection.FLIP) };
+        }
+    }
+
     /** occupationMatrix = {{true, true}}, character = 1, cellWidth = 2 -> {"####"} */
     private String[] makeStringRows(char character, int cellWidth) {
         String[] rows = new String[occupationMatrix.length];

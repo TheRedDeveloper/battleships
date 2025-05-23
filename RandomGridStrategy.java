@@ -1,5 +1,3 @@
-import java.util.EnumMap;
-import java.util.Map;
 
 /** Responsible for randomly placing ships on the bot's grid.
  * 
@@ -10,23 +8,13 @@ import java.util.Map;
 public class RandomGridStrategy implements GridStrategy {
     private static final int GRID_SIZE = 10;
     
-    // Ship type counts matching those in BuildMode
-    private static final Map<ShipType, Integer> shipTypeCounts = new EnumMap<>(ShipType.class);
-    static {
-        shipTypeCounts.put(ShipType.SUBMARINE1X1, 1);
-        shipTypeCounts.put(ShipType.DESTROYER2X1, 2);
-        shipTypeCounts.put(ShipType.CRUISER3X1, 1);
-        shipTypeCounts.put(ShipType.BATTLESHIP4X1, 1);
-        shipTypeCounts.put(ShipType.U, 1);
-    }
-    
     @Override
     public Grid generateGrid() {
         Grid grid = new Grid("Bot");
         
         // Generate ships for each type according to their counts
         for (ShipType shipType : ShipType.values()) {
-            int count = shipTypeCounts.get(shipType);
+            int count = BuildMode.totalShipTypeCounts.get(shipType);
             for (int i = 0; i < count; i++) {
                 placeShipRandomly(grid, shipType);
             }

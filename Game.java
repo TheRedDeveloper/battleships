@@ -9,7 +9,7 @@ import java.util.logging.Logger;
 public class Game {
     private static GameState state = new GameState(
         StartMenuMode.getInstance(),
-        new BotStrategy(new RandomGridStrategy(), new CheatAttackStrategy())
+        new BotStrategy(new RandomGridStrategy(), new ProbabilityAttackStrategy())
     );
     private static boolean isRunning;
     public static final Logger LOGGER = Logger.getLogger(Game.class.getName());

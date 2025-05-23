@@ -17,4 +17,9 @@ public class Tile {
     public boolean isOccupied() {
         return data.containedShip != null;
     }
+
+    @Override
+    public String toString() {
+        return "Tile[" + position.x + "," + position.y + " : " + data.toString() + "]";
+    }
 }

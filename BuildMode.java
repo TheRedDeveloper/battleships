@@ -21,13 +21,16 @@ public class BuildMode extends GameMode {
     private static final int SHIP_SELECT_START_X = 2;
     private static final int SHIP_SELECT_START_Y = 3;
     
-    private static final Map<ShipType, Integer> shipTypeCounts = new EnumMap<>(ShipType.class);
+    public static final Map<ShipType, Integer> totalShipTypeCounts = new EnumMap<>(ShipType.class);
+    private static final Map<ShipType, Integer> remainingShipTypeCounts = new EnumMap<>(ShipType.class);
     static {
-        shipTypeCounts.put(ShipType.SUBMARINE1X1, 1);
-        shipTypeCounts.put(ShipType.DESTROYER2X1, 2);
-        shipTypeCounts.put(ShipType.CRUISER3X1, 1);
-        shipTypeCounts.put(ShipType.BATTLESHIP4X1, 1);
-        shipTypeCounts.put(ShipType.U, 1);
+        totalShipTypeCounts.put(ShipType.SUBMARINE1X1, 1);
+        totalShipTypeCounts.put(ShipType.DESTROYER2X1, 2);
+        totalShipTypeCounts.put(ShipType.CRUISER3X1, 1);
+        totalShipTypeCounts.put(ShipType.BATTLESHIP4X1, 1);
+        totalShipTypeCounts.put(ShipType.U, 1);
+
+        remainingShipTypeCounts.putAll(totalShipTypeCounts);
     }
     
     private BuildMode() { }
@@ -48,15 +51,17 @@ public class BuildMode extends GameMode {
 
 
         display.drawString(SHIP_SELECT_START_X, SHIP_SELECT_START_Y-2, "←/→ to rotate");
-        display.drawString(GRID_START_X, SHIP_SELECT_START_Y-2, "↵ to confirm");
+        if (remainingShipTypeCounts.values().stream().allMatch(count -> count == 0)) {
+            display.drawString(GRID_START_X, SHIP_SELECT_START_Y-2, "↵ to confirm");
+        }
         display.drawString(SHIP_SELECT_START_X, SHIP_SELECT_START_Y-1, "Ship Selection:");
         int ry = 1; // "Ship Selection:" is on row 0
         for (ShipType shipType : ShipType.values()) {
-            if (shipTypeCounts.get(shipType) > 0) {
+            if (remainingShipTypeCounts.get(shipType) > 0) {
                 ShipBox box = Ship.boxByType.get(shipType);
                 box.displayFromAbsoluteTopLeftOn(SHIP_SELECT_START_X, SHIP_SELECT_START_Y + ry, display, '#', CELL_WIDTH);
-                if (shipTypeCounts.get(shipType) > 1) {
-                    display.drawString(SHIP_SELECT_START_X + box.getWidth() + 3, SHIP_SELECT_START_Y + ry, "x" + shipTypeCounts.get(shipType).toString());
+                if (remainingShipTypeCounts.get(shipType) > 1) {
+                    display.drawString(SHIP_SELECT_START_X + box.getWidth() + 3, SHIP_SELECT_START_Y + ry, "x" + remainingShipTypeCounts.get(shipType).toString());
                 }
                 for (int i = 0; i < box.getHeight(); i++) {
                     shipTypeSelectorOnRow[ry + i] = shipType;
@@ -110,7 +115,9 @@ public class BuildMode extends GameMode {
                     selectedDirection = selectedDirection.rotated(RotationDirection.COUNTER_CLOCKWISE);
                     break;
                 case KeyEvent.VK_ENTER:
-                    gameState.setMode(MainMode.getInstance());
+                    if (remainingShipTypeCounts.values().stream().allMatch(count -> count == 0)) {
+                        gameState.setMode(MainMode.getInstance());
+                    }
                 default:
                     break;
             }
@@ -148,7 +155,7 @@ public class BuildMode extends GameMode {
                     if (ship != null) {
                         selectedShipType = ship.getType();
                         selectedDirection = ship.getDirection();
-                        shipTypeCounts.put(selectedShipType, shipTypeCounts.get(selectedShipType) + 1);
+                        remainingShipTypeCounts.put(selectedShipType, remainingShipTypeCounts.get(selectedShipType) + 1);
                         grid.removeShip(ship.getId());
                         isPickUpSelected = false;
                     }
@@ -166,7 +173,7 @@ public class BuildMode extends GameMode {
                         if (!ship.isUsingOccupiedTiles(grid)) {
                             Game.LOGGER.info("Adding ship: " + selectedShipType + " at " + mouseGridX + ", " + mouseGridY);
                             grid.addShip(ship);
-                            shipTypeCounts.put(selectedShipType, shipTypeCounts.get(selectedShipType) - 1);
+                            remainingShipTypeCounts.put(selectedShipType, remainingShipTypeCounts.get(selectedShipType) - 1);
                             selectedShipType = null;
                         }
                     }
