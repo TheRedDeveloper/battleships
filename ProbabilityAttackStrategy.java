@@ -29,9 +29,8 @@ public class ProbabilityAttackStrategy implements AttackStrategy {
             shipTypesLeft.remove(ship.getType());
         });
         Game.LOGGER.info("Generating belief states...");
-        long beliefCount = beliefCount(opponentGrid, realState, shipTypesLeft, hitCount);
+        generateHitCountWithBeliefs(100000000, opponentGrid, realState, shipTypesLeft, hitCount);
         Game.LOGGER.info(Arrays.deepToString(hitCount));
-        Game.LOGGER.info("Total belief states generated: " + beliefCount);
         return new Position(0, 0);
     }
 
@@ -133,6 +132,139 @@ public class ProbabilityAttackStrategy implements AttackStrategy {
                 }
             }
             return beliefCount;
+        }
+    }
+
+    private void generateHitCountWithBeliefs(int count, Grid opponentGrid, boolean[] beliefGrid, List<ShipType> shipTypesLeft, long[][] outHitCount) {
+        boolean[][] isMiss = new boolean[10][10];
+        for (Tile tile : opponentGrid.getTiles()) {
+            isMiss[tile.position.x][tile.position.y] = tile.data.isHit && tile.data.containedShip == null;
+        }
+        boolean[][] hasShip = new boolean[10][10];
+        List<Position> hitPositions = opponentGrid.getHitTiles().stream().map(tile -> tile.position).toList();
+        for (Tile tile : opponentGrid.getTiles()) {
+            if (tile.data.containedShip != null) {
+                hasShip[tile.position.x][tile.position.y] = true;
+            }
+        }
+
+        // ShipType -> Rotation -> List of occupied positions
+        Map<ShipType, List<List<Position>>> occupiedRelativePositionsForAllRotationsByShipType = new EnumMap<>(ShipType.class);
+        for (ShipType shipType : shipTypesLeft) {
+            ShipBox shipBox = Ship.boxByType.get(shipType);
+            List<List<Position>> rotationPositions = new ArrayList<>();
+            for (Direction direction : shipBox.getUniqueDirections()) {
+                rotationPositions.add(shipBox.inDirection(direction).getOccupiedRelativePositions());
+            }
+            occupiedRelativePositionsForAllRotationsByShipType.put(shipType, rotationPositions);
+        }
+
+        for (int i = 0; i < count; i++) {
+            int col = Game.RANDOM.nextInt(10);
+            int row = Game.RANDOM.nextInt(10);
+            ShipType shipType = shipTypesLeft.get(0);
+            List<List<Position>> occupiedRelativePositionsList = occupiedRelativePositionsForAllRotationsByShipType.get(shipType);
+            int randomRotationIndex = Game.RANDOM.nextInt(occupiedRelativePositionsList.size());
+            List<Position> occupiedRelativePositions = occupiedRelativePositionsList.get(randomRotationIndex);
+            boolean[] outBeliefGrid = beliefGrid.clone();
+            List<ShipType> outShipTypesLeft = new ArrayList<>(shipTypesLeft);
+            boolean found = false;
+            while (!found) {
+                try {
+                    monteCarloTreeSearchMakeValidBeliefGrid(
+                        col,
+                        row,
+                        occupiedRelativePositions,
+                        outBeliefGrid,
+                        outShipTypesLeft,
+                        hitPositions,
+                        isMiss,
+                        hasShip,
+                        occupiedRelativePositionsForAllRotationsByShipType
+                    );
+                    found = true;
+                } catch (AbusingJavaExceptionsBullshitExeception e) {
+                    found = false;
+                }
+            }
+            for (int j = 0; j < 100; j++) {
+                if (outBeliefGrid[j]) {
+                    outHitCount[j / 10][j % 10]++;
+                }
+            }
+        }
+    }
+    private boolean monteCarloTreeSearchMakeValidBeliefGrid(int col, int row, List<Position> occupiedRelativePositions, boolean[] outBeliefGrid, List<ShipType> outShipTypesLeft, List<Position> hitPositions, boolean[][] hasShip, boolean[][] isMiss, Map<ShipType, List<List<Position>>> occupiedRelativePositionsForAllRotationsByShipType) throws AbusingJavaExceptionsBullshitExeception {
+        boolean valid = true;
+        for (Position occupiedRelativePosition : occupiedRelativePositions) {
+            if (col + occupiedRelativePosition.x < 0 || col + occupiedRelativePosition.x >= 10 ||
+                row + occupiedRelativePosition.y < 0 || row + occupiedRelativePosition.y >= 10 || 
+                outBeliefGrid[(col + occupiedRelativePosition.x) * 10 + (row + occupiedRelativePosition.y)] ||
+                isMiss[col + occupiedRelativePosition.x][row + occupiedRelativePosition.y]) {
+                valid = false;
+                break;
+            }
+        }
+        if (valid) {
+            for (Position occupiedRelativePosition : occupiedRelativePositions) {
+                outBeliefGrid[(occupiedRelativePosition.x + col) * 10 + occupiedRelativePosition.y + row] = true;
+            }
+            outShipTypesLeft.remove(0);
+            if (outShipTypesLeft.isEmpty()) {
+                for (Position pos : hitPositions) {
+                    int idx = pos.x * 10 + pos.y;
+                    if (hasShip[pos.x][pos.y]) {
+                        if (!outBeliefGrid[idx]) {
+                            throw new AbusingJavaExceptionsBullshitExeception();
+                        }
+                    } else {
+                        if (outBeliefGrid[idx]) {
+                            throw new AbusingJavaExceptionsBullshitExeception();
+                        }
+                    }
+                }
+                return true;
+            } else {
+                // Go next ship, random rotation, random position
+                List<List<Position>> rotations = occupiedRelativePositionsForAllRotationsByShipType.get(outShipTypesLeft.get(0));
+                while(
+                    !monteCarloTreeSearchMakeValidBeliefGrid(
+                        Game.RANDOM.nextInt(10),
+                        Game.RANDOM.nextInt(10),
+                        rotations.get(Game.RANDOM.nextInt(rotations.size())),
+                        outBeliefGrid,
+                        outShipTypesLeft,
+                        hitPositions,
+                        isMiss,
+                        hasShip,
+                        occupiedRelativePositionsForAllRotationsByShipType
+                    )
+                ) {
+                    // Try again
+                }
+                _debugBeliefStateCount++;
+                if (_debugBeliefStateCount % 1000000 == 0) {
+                    StringBuilder gridStr = new StringBuilder("\n");
+                    for (int i = 0; i < 10; i++) {
+                        for (int j = 0; j < 10; j++) {
+                            gridStr.append(outBeliefGrid[j * 10 + i] ? "1 " : "0 ");
+                        }
+                        gridStr.append("\n");
+                    }
+                    long milis = Duration.between(startTime, Instant.now()).toMillis();
+                    long perSecond = _debugBeliefStateCount * 1000 / milis;
+                    Game.LOGGER.info("Generated " + _debugBeliefStateCount + " belief states in " + milis + " ms (" + perSecond + "/s)" + gridStr);
+                }
+                return true;
+            }
+        } else {
+            return false;
+        }
+    }
+
+    public class AbusingJavaExceptionsBullshitExeception extends RuntimeException {
+        public AbusingJavaExceptionsBullshitExeception() {
+            super("This exception is thrown to abuse Java's exception handling for control flow.");
         }
     }
 }
