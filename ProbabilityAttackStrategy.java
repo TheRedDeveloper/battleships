@@ -31,9 +31,24 @@ public class ProbabilityAttackStrategy implements AttackStrategy {
         Game.LOGGER.info("Generating belief states...");
         generateHitCountWithBeliefs(100000000, opponentGrid, realState, shipTypesLeft, hitCount);
         Game.LOGGER.info(Arrays.deepToString(hitCount));
-        return new Position(0, 0);
+        return getHighestScorePosition(hitCount);
     }
 
+    private Position getHighestScorePosition(long[][] hitCount) {
+        int maxX = 0;
+        int maxY = 0;
+        long maxScore = hitCount[0][0];
+        for (int x = 0; x < 10; x++) {
+            for (int y = 0; y < 10; y++) {
+                if (hitCount[x][y] > maxScore) {
+                    maxScore = hitCount[x][y];
+                    maxX = x;
+                    maxY = y;
+                }
+            }
+        }
+        return new Position(maxX, maxY);
+    }
 
     private long beliefCount(Grid opponentGrid, boolean[] beliefGrid, List<ShipType> shipTypesLeft, long[][] outHitCount) {
         boolean[][] isMiss = new boolean[10][10];
