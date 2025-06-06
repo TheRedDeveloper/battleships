@@ -145,8 +145,9 @@ public class Grid {
         StringBuilder result = new StringBuilder();
         result.append("Grid ").append(name).append(":\n");
         
-        for (TileData[] row : tiles) {
-            for (TileData tile : row) {
+        for (int y = 0; y < tiles[0].length; y++) {
+            for (TileData[] col : tiles) {
+                TileData tile = col[y];
                 if (tile.isHit) {
                     result.append(tile.containedShip != null ? "X" : "O");
                 } else {
