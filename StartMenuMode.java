@@ -53,9 +53,6 @@ public class StartMenuMode extends GameMode {
         "I wanted to lean Java,",
         "but I couldn't find the class",
         "",
-        "I'd tell you another joke about Java,",
-        "but I think it's too complex for you to get it.",
-        "",
         "THANK YOU FOR PLAYING!",
         "",
         "Press any key to return"
