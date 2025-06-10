@@ -139,6 +139,7 @@ public class MainMode extends GameMode {
         } else if (botTurnFuture != null) {
             if (gameState.grids.get(0).isLost()) {
                 Game.LOGGER.info("You lost!");
+                gameState.setMode(EndScreenMode.getInstance());
             }
             botTurnFuture = null;
         }
@@ -162,6 +163,7 @@ public class MainMode extends GameMode {
                     previewPosition = null;
                     if (opponentGrid.isLost()) {
                         Game.LOGGER.info("You won!");
+                        gameState.setMode(EndScreenMode.getInstance());
                     }
 
                     final GameState finalState = gameState;
