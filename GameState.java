@@ -16,12 +16,12 @@ public class GameState {
 
     public void setMode(GameMode mode) {
         Game.LOGGER.info("Switching game mode from " + this.mode.getClass().getSimpleName() + " to " + mode.getClass().getSimpleName());
-        setSelf(this.mode.exit(this));
+        set(this.mode.exit(this));
         this.mode = mode;
-        setSelf(mode.enter(this));
+        set(mode.enter(this));
     }
 
-    private void setSelf(GameState gameState) {
+    public void set(GameState gameState) {
         this.mode = gameState.mode;
         this.grids = gameState.grids;
         this.botStrategy = gameState.botStrategy;

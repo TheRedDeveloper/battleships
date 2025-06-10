@@ -52,7 +52,7 @@ public class ProbabilityAttackStrategy implements AttackStrategy {
         });
         Game.LOGGER.info("Generating belief states...");
         status.set(new AttackStrategyStatus(true, "Generating belief states...", null));
-        long beliefStateCount = generateHitCountWithBeliefs(1, opponentGrid, realState, shipTypesLeft, hitCount);
+        long beliefStateCount = generateHitCountWithBeliefs(2, opponentGrid, realState, shipTypesLeft, hitCount);
         timesRan++;
         status.set(new AttackStrategyStatus(false, "", null));
         if (beliefStateCount == 0) {

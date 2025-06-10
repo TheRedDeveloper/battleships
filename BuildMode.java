@@ -22,15 +22,13 @@ public class BuildMode extends GameMode {
     private static final int SHIP_SELECT_START_Y = 3;
     
     public static final Map<ShipType, Integer> totalShipTypeCounts = new EnumMap<>(ShipType.class);
-    private static final Map<ShipType, Integer> remainingShipTypeCounts = new EnumMap<>(ShipType.class);
+    private static Map<ShipType, Integer> remainingShipTypeCounts = new EnumMap<>(ShipType.class);
     static {
         totalShipTypeCounts.put(ShipType.SUBMARINE1X1, 1);
         totalShipTypeCounts.put(ShipType.DESTROYER2X1, 2);
         totalShipTypeCounts.put(ShipType.CRUISER3X1, 1);
         totalShipTypeCounts.put(ShipType.BATTLESHIP4X1, 1);
         totalShipTypeCounts.put(ShipType.U, 1);
-
-        remainingShipTypeCounts.putAll(totalShipTypeCounts);
     }
     
     private BuildMode() { }
@@ -43,7 +41,11 @@ public class BuildMode extends GameMode {
     }
 
     @Override
-    public GameState enter(GameState gameState) { return gameState; }
+    public GameState enter(GameState gameState) {
+        remainingShipTypeCounts = new EnumMap<>(totalShipTypeCounts);
+        Game.LOGGER.info("Entering Build Mode");
+        return gameState;
+    }
 
     @Override
     public void render(GameState gameState, AsciiDisplay display) {
@@ -202,7 +204,9 @@ public class BuildMode extends GameMode {
         }
     
         return gameState;
-    }    @Override
+    }
+    
+    @Override
     public GameState exit(GameState gameState) {
         gameState.grids.add(gameState.getBotStrategy().generateGrid());
         return gameState;

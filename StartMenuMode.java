@@ -11,9 +11,12 @@ import java.time.Duration;
 public class StartMenuMode extends GameMode {
     // Constants and member variables
     private static final String[] MENU_OPTIONS = {
-        "Start Game",
-        "Credits",
         "Calibrate",
+        "Easy",
+        "Normal",
+        "Hard",
+        "Impossible",
+        "Credits",
         "Exit"
     };
     
@@ -160,7 +163,7 @@ public class StartMenuMode extends GameMode {
         if (screen == StartMenuScreen.MAIN) {
             switch (keyCode) {
                 case KeyEvent.VK_UP, KeyEvent.VK_K -> selectedOption = Math.max(0, selectedOption - 1);
-                case KeyEvent.VK_DOWN, KeyEvent.VK_J -> selectedOption = Math.min(2, selectedOption + 1);
+                case KeyEvent.VK_DOWN, KeyEvent.VK_J -> selectedOption = Math.min(6, selectedOption + 1);
                 case KeyEvent.VK_ENTER -> handleSelection(gameState);
                 default -> {
                     char keyChar = e.getKeyChar();
@@ -177,6 +180,22 @@ public class StartMenuMode extends GameMode {
                             selectedOption = 2;
                             handleSelection(gameState);
                         }
+                        case '4' -> {
+                            selectedOption = 3;
+                            handleSelection(gameState);
+                        }
+                        case '5' -> {
+                            selectedOption = 4;
+                            handleSelection(gameState);
+                        }
+                        case '6' -> {
+                            selectedOption = 5;
+                            handleSelection(gameState);
+                        }
+                        case '7' -> {
+                            selectedOption = 6;
+                            handleSelection(gameState);
+                        }
                         default -> {
                             // Ignore other keys
                         }
@@ -191,16 +210,27 @@ public class StartMenuMode extends GameMode {
     
     private void handleSelection(GameState gameState) {
         switch (selectedOption) {
-            case 0 -> gameState.setMode(BuildMode.getInstance());
-            case 1 -> {  // Credits
-                screen = StartMenuScreen.CREDITS;
-                creditsStartTime = Game.getTimeSinceStart().toMillis();
-            }
-            case 2 -> {  // Calibrate
+            case 0 -> {  // Calibrate
                 screen = StartMenuScreen.CALIBRATE;
                 Game.resizeDisplay(10000, 10000);
             }
-            case 3 -> Game.stop();
+            case 1,2,3,4 -> { // Easy
+
+                AttackStrategy attackStrategy = switch (selectedOption) {
+                    case 1 -> new RandomAttackStrategy(); // Easy
+                    case 2 -> new HuntAndTargetAttackStrategy(); // Normal
+                    case 3 -> new ProbabilityAttackStrategy(); // Hard
+                    case 4 -> new CheatAttackStrategy(); // Impossible
+                    default -> throw new IllegalStateException("Unexpected value: " + selectedOption);
+                };
+                gameState.set(new GameState(BuildMode.getInstance(), new BotStrategy(new RandomGridStrategy(), attackStrategy)));
+                gameState.set(BuildMode.getInstance().enter(gameState));
+            }
+            case 5 -> {  // Credits
+                screen = StartMenuScreen.CREDITS;
+                creditsStartTime = Game.getTimeSinceStart().toMillis();
+            }
+            case 6 -> Game.stop();
             default -> throw new IllegalStateException("Weird option selected: " + selectedOption);
         }
     }

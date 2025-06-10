@@ -6,7 +6,7 @@ import java.time.Duration;
  * This screen displays when a game concludes, showing victory or defeat
  * animations and allowing the player to return to the start menu.
  *
- * @author Copilot */
+ * @author Claude */
 public class EndScreenMode extends GameMode {
     // Constants and member variables
     private static final int DISPLAY_HEIGHT = AsciiDisplay.getGridHeight();
@@ -203,10 +203,10 @@ public class EndScreenMode extends GameMode {
             ANSI.BRIGHT_MAGENTA, ANSI.BRIGHT_CYAN
         };
         
-        // Create random firework particles across the top of the screen
+        // Create random firework particles across the screen
         for (int i = 0; i < MAX_PARTICLES; i++) {
             int x = Game.RANDOM.nextInt(DISPLAY_WIDTH);
-            int y = Game.RANDOM.nextInt(DISPLAY_HEIGHT / 2);
+            int y = Game.RANDOM.nextInt(DISPLAY_HEIGHT);
             
             double vx = (Game.RANDOM.nextDouble() - 0.5) * 3.0;
             double vy = (Game.RANDOM.nextDouble() - 0.5) * 3.0;
@@ -303,7 +303,7 @@ public class EndScreenMode extends GameMode {
             if (activeParticles >= MAX_PARTICLES) break;
             
             int x = Game.RANDOM.nextInt(DISPLAY_WIDTH);
-            int y = Game.RANDOM.nextInt(5);
+            int y = Game.RANDOM.nextInt(DISPLAY_HEIGHT);
             
             double vx = (Game.RANDOM.nextDouble() - 0.5) * 2.0;
             double vy = (Game.RANDOM.nextDouble()) * 2.0;
