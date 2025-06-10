@@ -11,7 +11,26 @@ public class ProbabilityAttackStrategy implements AttackStrategy {
     public static int _debugTimesRan = 0;
     private static Instant startTime;
     
-
+    private static class FastRandom {
+        private long seed;
+        
+        public FastRandom() {
+            this.seed = System.nanoTime();
+        }
+        
+        public FastRandom(long seed) {
+            this.seed = seed;
+        }
+        
+        public int nextInt(int bound) {
+            seed ^= (seed << 21);
+            seed ^= (seed >>> 35);
+            seed ^= (seed << 4);
+            return (int)((seed & 0x7FFFFFFF) % bound);
+        }
+    }
+    private static final FastRandom FAST_RANDOM = new FastRandom();
+    
     @Override
     public Position generateAttackPosition(Grid opponentGrid) {
         Game.LOGGER.info("Generating attack position...");
@@ -92,20 +111,18 @@ public class ProbabilityAttackStrategy implements AttackStrategy {
             boolean found = false;
             while (!found) {
                 outBeliefGrid = beliefGrid.clone();
-                try {
-                    found = monteCarloTreeSearchMakeValidBeliefGrid(
-                        Game.RANDOM.nextInt(10),
-                        Game.RANDOM.nextInt(10),
-                        occupiedRelativePositionsList.get(Game.RANDOM.nextInt(occupiedRelativePositionsListSize)),
-                        outBeliefGrid,
-                        new ArrayList<>(shipTypesLeft),
-                        hitPositions,
-                        hasKnownShip,
-                        isMiss,
-                        occupiedRelativePositionsForAllRotationsByShipType
-                    );
-                } catch (AbusingJavaExceptionsBullshitExeception e) {
-                    found = false;
+                if(monteCarloTreeSearchMakeValidBeliefGrid(
+                    FAST_RANDOM.nextInt(10),  // Using specialized method
+                    FAST_RANDOM.nextInt(10),  // Using specialized method
+                    occupiedRelativePositionsList.get(FAST_RANDOM.nextInt(occupiedRelativePositionsListSize)),
+                    outBeliefGrid,
+                    new ArrayList<>(shipTypesLeft),
+                    hitPositions,
+                    hasKnownShip,
+                    isMiss,
+                    occupiedRelativePositionsForAllRotationsByShipType
+                ) == GridValidationResult.VALID) {
+                    found = true;
                 }
             }
             for (int j = 0; j < 100; j++) {
@@ -131,7 +148,7 @@ public class ProbabilityAttackStrategy implements AttackStrategy {
         return beliefStateCount;
     }
 
-    private boolean monteCarloTreeSearchMakeValidBeliefGrid(
+    private GridValidationResult monteCarloTreeSearchMakeValidBeliefGrid(
         int col,
         int row,
         List<Position> occupiedRelativePositions,
@@ -142,21 +159,21 @@ public class ProbabilityAttackStrategy implements AttackStrategy {
         boolean[][] isMiss,
         Map<ShipType,
         List<List<Position>>> occupiedRelativePositionsForAllRotationsByShipType
-    ) throws AbusingJavaExceptionsBullshitExeception {
+    ) {
         boolean allHits = true;
         for (Position occupiedRelativePosition : occupiedRelativePositions) {
             if (col + occupiedRelativePosition.x < 0 || col + occupiedRelativePosition.x >= 10 ||
                 row + occupiedRelativePosition.y < 0 || row + occupiedRelativePosition.y >= 10 || 
                 outBeliefGrid[(col + occupiedRelativePosition.x) * 10 + (row + occupiedRelativePosition.y)] ||
                 isMiss[col + occupiedRelativePosition.x][row + occupiedRelativePosition.y]) {
-                return false;
+                return GridValidationResult.INVALID;
             }
             if (allHits && !hasKnownShip[col + occupiedRelativePosition.x][row + occupiedRelativePosition.y]) {
                 allHits = false;
             }
         }
         if (allHits) {
-            return false; // return false cuz this ship would already be sunk
+            return GridValidationResult.INVALID; // return false cuz this ship would already be sunk
         }
         for (Position occupiedRelativePosition : occupiedRelativePositions) {
             outBeliefGrid[(occupiedRelativePosition.x + col) * 10 + occupiedRelativePosition.y + row] = true;
@@ -167,40 +184,42 @@ public class ProbabilityAttackStrategy implements AttackStrategy {
                 int idx = pos.x * 10 + pos.y;
                 if (hasKnownShip[pos.x][pos.y]) {
                     if (!outBeliefGrid[idx]) {
-                        throw new AbusingJavaExceptionsBullshitExeception();
+                        return GridValidationResult.BACK_TO_THE_START; // We need to go back to generateHitCountWithBeliefs
                     }
                 } else {
                     if (outBeliefGrid[idx]) {
-                        throw new AbusingJavaExceptionsBullshitExeception();
+                        return GridValidationResult.BACK_TO_THE_START; // We need to go back to generateHitCountWithBeliefs
                     }
                 }
             }
         } else {
             // Go next ship, random rotation, random position
             List<List<Position>> rotations = occupiedRelativePositionsForAllRotationsByShipType.get(outShipTypesLeft.get(0));
-            while(
-                !monteCarloTreeSearchMakeValidBeliefGrid(
-                    Game.RANDOM.nextInt(10),
-                    Game.RANDOM.nextInt(10),
-                    rotations.get(Game.RANDOM.nextInt(rotations.size())),
+            GridValidationResult result;
+            do {
+                result = monteCarloTreeSearchMakeValidBeliefGrid(
+                    FAST_RANDOM.nextInt(10),  // Using specialized method
+                    FAST_RANDOM.nextInt(10),  // Using specialized method
+                    rotations.get(FAST_RANDOM.nextInt(rotations.size())),
                     outBeliefGrid,
                     outShipTypesLeft,
                     hitPositions,
                     hasKnownShip,
                     isMiss,
                     occupiedRelativePositionsForAllRotationsByShipType
-                )
-            ) {
-                // Try again
-            }
+                );
+                if (result == GridValidationResult.BACK_TO_THE_START) {
+                    return GridValidationResult.BACK_TO_THE_START; // This will be caught in generateHitCountWithBeliefs
+                }
+            } while (result == GridValidationResult.INVALID);
         }
-        return true;
+        return GridValidationResult.VALID;
     }
 
-    public class AbusingJavaExceptionsBullshitExeception extends RuntimeException {
-        public AbusingJavaExceptionsBullshitExeception() {
-            super("This exception is thrown to abuse Java's exception handling for control flow.");
-        }
+    enum GridValidationResult {
+        VALID,
+        INVALID,
+        BACK_TO_THE_START
     }
 
     public static String formatLong10x10Beautiful(long[][] long10x10) {
