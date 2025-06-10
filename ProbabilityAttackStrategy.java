@@ -1,16 +1,17 @@
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ProbabilityAttackStrategy implements AttackStrategy {
-    public static Instant _debugLastLog = Instant.ofEpochSecond(0);
-    public static int _debugTimesRan = 0;
+    public static Instant lastLog = Instant.ofEpochSecond(0);
+    public static int timesRan = 0;
     private static Instant startTime;
-    
+
+    private final AtomicReference<AttackStrategyStatus> status = new AtomicReference<>(new AttackStrategyStatus(false, "", null));
     private static class FastRandom {
         private long seed;
         
@@ -50,14 +51,15 @@ public class ProbabilityAttackStrategy implements AttackStrategy {
             shipTypesLeft.remove(ship.getType());
         });
         Game.LOGGER.info("Generating belief states...");
-        Game.LOGGER.info(Arrays.deepToString(hitCount));
-        long beliefStateCount = generateHitCountWithBeliefs(10, opponentGrid, realState, shipTypesLeft, hitCount);
-        _debugTimesRan++;
+        status.set(new AttackStrategyStatus(true, "Generating belief states...", null));
+        long beliefStateCount = generateHitCountWithBeliefs(1, opponentGrid, realState, shipTypesLeft, hitCount);
+        timesRan++;
+        status.set(new AttackStrategyStatus(false, "", null));
         if (beliefStateCount == 0) {
             Game.LOGGER.info("No belief states generated, returning random position.");
             return new Position(Game.RANDOM.nextInt(10), Game.RANDOM.nextInt(10));
         }
-        Game.LOGGER.info("Hit count "+ _debugTimesRan + ":\n" + formatLong10x10Beautiful(hitCount));
+        // Game.LOGGER.info("Hit count "+ timesRan + ":\n" + formatLong10x10Beautiful(hitCount));
         return getHighestScorePosition(hitCount, opponentGrid);
     }
 
@@ -85,7 +87,6 @@ public class ProbabilityAttackStrategy implements AttackStrategy {
         }
         boolean[][] hasKnownShip = new boolean[10][10];
         List<Position> hitPositions = opponentGrid.getHitTiles().stream().map(tile -> tile.position).toList();
-        Game.LOGGER.info("Hit positions: " + hitPositions.toString());
         for (Tile tile : opponentGrid.getTiles()) {
             if (tile.data.containedShip != null && tile.data.isHit) {
                 hasKnownShip[tile.position.x][tile.position.y] = true;
@@ -103,6 +104,8 @@ public class ProbabilityAttackStrategy implements AttackStrategy {
             occupiedRelativePositionsForAllRotationsByShipType.put(shipType, rotationPositions);
         }
 
+        double[][] certaintyHeatmap = new double[10][10];
+
         while (beliefStateCount < 10000000 && Duration.between(startTime, Instant.now()).toSeconds() < seconds) {
             ShipType shipType = shipTypesLeft.get(0);
             List<List<Position>> occupiedRelativePositionsList = occupiedRelativePositionsForAllRotationsByShipType.get(shipType);
@@ -112,8 +115,8 @@ public class ProbabilityAttackStrategy implements AttackStrategy {
             while (!found) {
                 outBeliefGrid = beliefGrid.clone();
                 if(monteCarloTreeSearchMakeValidBeliefGrid(
-                    FAST_RANDOM.nextInt(10),  // Using specialized method
-                    FAST_RANDOM.nextInt(10),  // Using specialized method
+                    FAST_RANDOM.nextInt(10),
+                    FAST_RANDOM.nextInt(10),
                     occupiedRelativePositionsList.get(FAST_RANDOM.nextInt(occupiedRelativePositionsListSize)),
                     outBeliefGrid,
                     new ArrayList<>(shipTypesLeft),
@@ -131,18 +134,30 @@ public class ProbabilityAttackStrategy implements AttackStrategy {
                 }
             }
             beliefStateCount++;
-            if (beliefStateCount % 10000 == 0 && Duration.between(_debugLastLog, Instant.now()).toMillis() > 1000) {
-                _debugLastLog = Instant.now();
-                StringBuilder gridStr = new StringBuilder("\n");
-                for (int i = 0; i < 10; i++) {
-                    for (int j = 0; j < 10; j++) {
-                        gridStr.append(outBeliefGrid[j * 10 + i] ? "1 " : "0 ");
-                    }
-                    gridStr.append("\n");
-                }
+            if (beliefStateCount % 10000 == 0 && Duration.between(lastLog, Instant.now()).toMillis() > 200) {
+                lastLog = Instant.now();
+                // StringBuilder gridStr = new StringBuilder("\n");
+                // for (int i = 0; i < 10; i++) {
+                //     for (int j = 0; j < 10; j++) {
+                //         gridStr.append(outBeliefGrid[j * 10 + i] ? "1 " : "0 ");
+                //     }
+                //     gridStr.append("\n");
+                // }
                 long milis = Duration.between(startTime, Instant.now()).toMillis();
                 long perSecond = beliefStateCount * 1000 / milis;
-                Game.LOGGER.info("Generated " + beliefStateCount + " belief states in " + milis + " ms (" + perSecond + "/s)" + gridStr);
+                // Game.LOGGER.info("Generated " + beliefStateCount + " belief states in " + milis + " ms (" + perSecond + "/s)" + gridStr);
+                
+                for (int x = 0; x < 10; x++) {
+                    for (int y = 0; y < 10; y++) {
+                        certaintyHeatmap[x][y] = Math.min(1.0, Math.max(0.0, (double)outHitCount[x][y] / beliefStateCount));
+                    }
+                }
+                
+                status.set(new AttackStrategyStatus(
+                    true,
+                    beliefStateCount + " possibilities accounted (" + perSecond + "/s)",
+                    certaintyHeatmap
+                ));
             }
         }
         return beliefStateCount;
@@ -274,8 +289,8 @@ public class ProbabilityAttackStrategy implements AttackStrategy {
         return sb.toString();
     }
 
-    double[][] getCertainty(){
-        // clamp(0,1,hitCount / beliefStateCount / ((startTime - time) / 10s))
-        throw new UnsupportedOperationException("Not implemented yet");
+    @Override
+    public AttackStrategyStatus getStatus() {
+        return status.get();
     }
 }

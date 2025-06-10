@@ -84,7 +84,7 @@ public class StartMenuMode extends GameMode {
     
     private static final int STAR_COUNT = 32;
     private Star[] stars = new Star[STAR_COUNT];
-    private static final char[] STAR_SYMBOLS = {'*', '.', '·', '✦', '✧'};
+    private static final char[] STAR_SYMBOLS = {'*', '.', '·', '-', '+'};
     private static final String[] STAR_COLORS = {
         ANSI.BRIGHT_WHITE, ANSI.WHITE, ANSI.BRIGHT_CYAN, ANSI.BRIGHT_YELLOW
     };
@@ -408,7 +408,7 @@ public class StartMenuMode extends GameMode {
             for (int x = 0; x < DISPLAY_WIDTH; x++) {
                 // Create a more complex wave pattern
                 double waveOffset = Math.sin(currentTime / 500.0 + x * 0.2) * 0.5;
-                char waveChar = (waveOffset > 0) ? '~' : '≈';
+                char waveChar = (waveOffset > 0) ? '~' : '=';
                 
                 // Wave color cycling 
                 String waveColor = switch ((x + y + (int)(currentTime / 500)) % 3) {

@@ -177,4 +177,9 @@ public class OptimalAttackStrategy implements AttackStrategy {
             return beliefCount;
         }
     }
+
+    @Override
+    public AttackStrategyStatus getStatus() {
+        return null; // TODO: Nobody will ever use this, but we should implement it anyway
+    }
 }

@@ -1,10 +1,14 @@
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
 
-/** Attack mode of the game where the player can attack the opponent's ships.
- *  Handles rendering the attack grid, processing player input for attacks,
- *  and updating the game state based on hit/miss results. */
+/**
+ * Attack mode of the game where the player can attack the opponent's ships.
+ * Handles rendering the attack grid, processing player input for attacks,
+ * and updating the game state based on hit/miss results.
+ */
 public class MainMode extends GameMode {
     private static MainMode instance = null;
+
     public static MainMode getInstance() {
         if (instance == null) {
             instance = new MainMode();
@@ -21,8 +25,13 @@ public class MainMode extends GameMode {
 
     private Position previewPosition;
 
+    private CompletableFuture<Void> botTurnFuture = null;
+    private boolean playerCanAttack = true;
+
     @Override
-    public GameState enter(GameState gameState){ return gameState; }
+    public GameState enter(GameState gameState) {
+        return gameState;
+    }
 
     @Override
     public void render(GameState gameState, AsciiDisplay display){
@@ -56,6 +65,39 @@ public class MainMode extends GameMode {
                 display.drawString(MY_GRID_START_X + tile.getX() * CELL_WIDTH, MY_GRID_START_Y + tile.getY(), "xx", ANSI.GREEN);
             }
         }
+        
+        if (botTurnFuture != null && !botTurnFuture.isDone()) {
+            AttackStrategy.AttackStrategyStatus status = gameState.getBotStrategy().getAttackStrategyStatus();
+            if (status != null && status.isGenerating) {
+                display.drawString(OPPONENT_GRID_START_X, OPPONENT_GRID_START_Y + GRID_SIZE + 1, status.message, ANSI.YELLOW);
+                if (status.certainty != null) {
+                    for (int i = 0; i < GRID_SIZE; i++) {
+                        for (int j = 0; j < GRID_SIZE; j++) {
+                            if (!myGrid.getTile(i, j).data.isHit && status.certainty[i][j] > 0.03) {
+                                String color;
+                                if (status.certainty[i][j] > 0.3) {
+                                    color = ANSI.RED_BACKGROUND;
+                                } else if (status.certainty[i][j] > 0.2) {
+                                    color = ANSI.BRIGHT_RED_BACKGROUND;
+                                } else if (status.certainty[i][j] > 0.15) {
+                                    color = ANSI.YELLOW_BACKGROUND;
+                                } else if (status.certainty[i][j] > 0.1) {
+                                    color = ANSI.BRIGHT_YELLOW_BACKGROUND;
+                                } else if (status.certainty[i][j] > 0.05) {
+                                    color = ANSI.GREEN_BACKGROUND;
+                                } else {
+                                    color = ANSI.BRIGHT_GREEN_BACKGROUND;
+                                }
+                                display.setBackgroundColor(MY_GRID_START_X + i * CELL_WIDTH, MY_GRID_START_Y + j, color);
+                                display.setBackgroundColor(MY_GRID_START_X + i * CELL_WIDTH + 1, MY_GRID_START_Y + j, color);
+                            }
+                        }
+                    }
+                }
+            } else {
+                display.drawString(OPPONENT_GRID_START_X, OPPONENT_GRID_START_Y + GRID_SIZE + 1, "Bot is thinking...", ANSI.GREEN);
+            }
+        }
 
         // Opponent grid
         display.drawString(OPPONENT_GRID_START_X, OPPONENT_GRID_START_Y - 1, "Opponent", ANSI.RED);
@@ -85,20 +127,29 @@ public class MainMode extends GameMode {
 
         display.refreshDisplay();
     }
-    
+
     @Override
-    public GameState update(GameState gameState, InputManager inputManager, Duration deltaTime){
+    public GameState update(GameState gameState, InputManager inputManager, Duration deltaTime) {
         while (inputManager.hasKeyEvents()) {
             inputManager.pollKeyEvent(); // Just consume events for now
         }
 
+        if (botTurnFuture != null && !botTurnFuture.isDone()) {
+            return gameState;
+        } else if (botTurnFuture != null) {
+            if (gameState.grids.get(0).isLost()) {
+                Game.LOGGER.info("You lost!");
+            }
+            botTurnFuture = null;
+        }
+
         Position mousePos = inputManager.getMousePosition();
         boolean isMouseClicked = inputManager.checkAndResetMouseClicked();
-    
+
         boolean isMouseInGrid = mousePos.x >= OPPONENT_GRID_START_X &&
-                                mousePos.x < GRID_SIZE * CELL_WIDTH + OPPONENT_GRID_START_X && 
-                                mousePos.y >= OPPONENT_GRID_START_Y &&
-                                mousePos.y < GRID_SIZE + OPPONENT_GRID_START_Y;
+                mousePos.x < GRID_SIZE * CELL_WIDTH + OPPONENT_GRID_START_X &&
+                mousePos.y >= OPPONENT_GRID_START_Y &&
+                mousePos.y < GRID_SIZE + OPPONENT_GRID_START_Y;
         if (isMouseInGrid) {
             int gridMouseX = (mousePos.x - OPPONENT_GRID_START_X) / CELL_WIDTH;
             int gridMouseY = mousePos.y - OPPONENT_GRID_START_Y;
@@ -108,22 +159,27 @@ public class MainMode extends GameMode {
                 previewPosition = new Position(gridMouseX, gridMouseY);
                 if (isMouseClicked) {
                     opponentGrid.hitTile(gridMouseX, gridMouseY);
+                    previewPosition = null;
                     if (opponentGrid.isLost()) {
                         Game.LOGGER.info("You won!");
                     }
-                    Position attackPosition = gameState.getBotStrategy().generateAttackPosition(myGrid);
-                    myGrid.hitTile(attackPosition.x, attackPosition.y);
-                    if (myGrid.isLost()) {
-                        Game.LOGGER.info("You lost!");
-                    }
+
+                    final GameState finalState = gameState;
+                    botTurnFuture = CompletableFuture.runAsync(() -> {
+                        Position attackPosition = finalState.getBotStrategy().generateAttackPosition(myGrid);
+                        myGrid.hitTile(attackPosition.x, attackPosition.y);
+                    });
                 }
-            } else previewPosition = null;
+            } else
+                previewPosition = null;
         } else {
             previewPosition = null;
         }
         return gameState;
     }
-    
+
     @Override
-    public GameState exit(GameState gameState) { return gameState; }
+    public GameState exit(GameState gameState) {
+        return gameState;
+    }
 }

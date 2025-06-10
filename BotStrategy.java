@@ -14,4 +14,8 @@ public class BotStrategy {
     Position generateAttackPosition(Grid opponentGrid) {
         return attackStrategy.generateAttackPosition(opponentGrid);
     }
+
+    AttackStrategy.AttackStrategyStatus getAttackStrategyStatus() {
+        return attackStrategy.getStatus();
+    }
 }

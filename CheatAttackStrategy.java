@@ -16,4 +16,9 @@ public class CheatAttackStrategy implements AttackStrategy {
             throw new IllegalStateException("No hitting attack positions available. We have already won.");
         }
     }
+
+    @Override
+    public AttackStrategyStatus getStatus() {
+        return null; // Its instantaneous
+    }
 }

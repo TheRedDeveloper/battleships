@@ -50,9 +50,9 @@ public class BuildMode extends GameMode {
         display.clearBuffer();
 
 
-        display.drawString(SHIP_SELECT_START_X, SHIP_SELECT_START_Y-2, "←/→ to rotate");
+        display.drawString(SHIP_SELECT_START_X, SHIP_SELECT_START_Y-2, "<-/-> to rotate");
         if (remainingShipTypeCounts.values().stream().allMatch(count -> count == 0)) {
-            display.drawString(GRID_START_X, SHIP_SELECT_START_Y-2, "↵ to confirm");
+            display.drawString(GRID_START_X, SHIP_SELECT_START_Y-2, "Enter to confirm");
         }
         display.drawString(SHIP_SELECT_START_X, SHIP_SELECT_START_Y-1, "Ship Selection:");
         int ry = 1; // "Ship Selection:" is on row 0

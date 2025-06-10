@@ -23,4 +23,9 @@ public class RandomAttackStrategy implements AttackStrategy {
         
         return unshot.get(Game.RANDOM.nextInt(unshot.size()));
     }
+    
+    @Override
+    public AttackStrategyStatus getStatus() {
+        return null;
+    }
 }

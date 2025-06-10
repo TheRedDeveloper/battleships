@@ -43,4 +43,9 @@ public class HuntAndTargetAttackStrategy implements AttackStrategy {
         
         return toBeShot.get(Game.RANDOM.nextInt(toBeShot.size()));
     }
+
+    @Override
+    public AttackStrategyStatus getStatus() {
+        return null; // Its instantaneous
+    }
 }
