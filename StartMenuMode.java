@@ -332,7 +332,8 @@ public class StartMenuMode extends GameMode {
         display.clearBuffer();
         
         // Draw calibration instructions
-        display.drawString(2, 1, "BINGBONG", ANSI.BRIGHT_WHITE);
+        display.drawString(2, 1, "Click on the + in the bottom right!", ANSI.BRIGHT_WHITE);
+        display.drawString(2, 2, "Make sure the window fits.", ANSI.BRIGHT_WHITE);
         display.setCharacter(DISPLAY_WIDTH-1, DISPLAY_HEIGHT-1, '+', ANSI.BRIGHT_RED);
         
         display.refreshDisplay();
